@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="base_import_pdf_template_line_view_form" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.line.form.xberg</field>
+        <field name="model">base.import.pdf.template.line</field>
+        <field
+            name="inherit_id"
+            ref="base_import_pdf_by_template.base_import_pdf_template_line_view_form"
+        />
+        <field name="arch" type="xml">
+            <field name="pattern" position="before">
+                <field name="extraction_mode" invisible="1" />
+                <field
+                    name="xberg_jsonpath"
+                    invisible="extraction_mode != 'xberg' or value_type == 'fixed'"
+                    placeholder="$.tables[0].cellsByHeader[*].ITEM"
+                />
+                <field
+                    name="xberg_jsonpath_preview"
+                    invisible="extraction_mode != 'xberg' or value_type == 'fixed'"
+                    widget="text"
+                    readonly="1"
+                />
+            </field>
+            <field name="pattern" position="attributes">
+                <attribute
+                    name="help"
+                >Regular expression matched against the extracted text - or, if Xberg JSONPath above is set, against just what it selects instead of the whole document.</attribute>
+            </field>
+        </field>
+    </record>
+</odoo>

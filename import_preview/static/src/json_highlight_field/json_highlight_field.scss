@@ -1,0 +1,21 @@
+// Copyright 2026 Avunu LLC (avu.nu)
+// License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+
+.o_json_highlight_pre {
+    max-height: 400px;
+    overflow: auto;
+    margin: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--o-input-border-color, #ccc);
+    border-radius: var(--border-radius, 4px);
+    font-family: var(--bs-font-monospace, monospace);
+    font-size: 0.85em;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    // microlighter's `github` theme (themes/github.css) sets the block's own
+    // background/foreground via `light-dark()`, so this stays readable
+    // regardless of Odoo's manually-toggled dark mode matching the OS-level
+    // color scheme or not - see the comment on the theme import in the
+    // manifest for the one known cosmetic edge case that leaves open.
+}

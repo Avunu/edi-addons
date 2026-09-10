@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="base_import_pdf_template_view_form" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.form.preview</field>
+        <field name="model">base.import.pdf.template</field>
+        <field
+            name="inherit_id"
+            ref="base_import_pdf_by_template.base_import_pdf_template_view_form"
+        />
+        <field name="arch" type="xml">
+            <page name="page_line_ids" position="after">
+                <page string="Sample Data" name="page_sample_data">
+                    <group>
+                        <field
+                            name="sample_file"
+                            filename="sample_filename"
+                            string="Load sample from file"
+                        />
+                        <field name="sample_filename" invisible="1" />
+                    </group>
+                    <field name="sample_data" widget="text" />
+                    <field
+                        name="sample_data"
+                        widget="json_highlight"
+                        readonly="1"
+                        nolabel="1"
+                        invisible="not sample_data"
+                        string="Sample Data (highlighted)"
+                    />
+                    <separator string="Preview" />
+                    <field name="preview_summary" widget="text" readonly="1" />
+                </page>
+            </page>
+        </field>
+    </record>
+</odoo>

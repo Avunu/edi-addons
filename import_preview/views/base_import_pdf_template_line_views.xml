@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="base_import_pdf_template_line_view_form" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.line.form.preview</field>
+        <field name="model">base.import.pdf.template.line</field>
+        <field
+            name="inherit_id"
+            ref="base_import_pdf_by_template.base_import_pdf_template_line_view_form"
+        />
+        <field name="arch" type="xml">
+            <field name="pattern" position="after">
+                <field name="preview_result" widget="text" readonly="1" />
+            </field>
+            <group name="main_group" position="after">
+                <group>
+                    <field
+                        name="sample_data"
+                        widget="json_highlight"
+                        readonly="1"
+                        string="Template sample data"
+                    />
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>

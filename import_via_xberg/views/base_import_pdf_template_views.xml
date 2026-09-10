@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="base_import_pdf_template_view_form" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.form.xberg</field>
+        <field name="model">base.import.pdf.template</field>
+        <field
+            name="inherit_id"
+            ref="base_import_pdf_by_template.base_import_pdf_template_view_form"
+        />
+        <field name="arch" type="xml">
+            <field name="auto_detect_pattern" position="after">
+                <field
+                    name="xberg_config"
+                    invisible="extraction_mode != 'xberg'"
+                    placeholder='{"ocr": {"enabled": true}}'
+                    widget="text"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>

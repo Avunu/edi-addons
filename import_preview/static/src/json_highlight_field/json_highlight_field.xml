@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2026 Avunu LLC (avu.nu)
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html). -->
+<templates xml:space="preserve">
+    <t
+        t-name="import_preview.JsonHighlightField"
+        t-inherit="web.TextField"
+        t-inherit-mode="primary"
+    >
+        <!-- Only the read-only branch changes - see json_highlight_field.js
+             for why the editable <textarea> is left completely alone. -->
+        <xpath expr="//span[@t-esc]" position="replace">
+            <pre data-syntax-theme="github" class="o_json_highlight_pre">
+                <code class="language-json" t-esc="props.record.data[props.name] or ''" />
+            </pre>
+        </xpath>
+    </t>
+</templates>

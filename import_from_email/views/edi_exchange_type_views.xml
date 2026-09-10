@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="edi_exchange_type_view_form_import_template" model="ir.ui.view">
+        <field name="model">edi.exchange.type</field>
+        <field name="inherit_id" ref="edi_core_oca.edi_exchange_type_view_form" />
+        <field name="arch" type="xml">
+            <field name="process_model_id" position="after">
+                <field name="import_template_id" options="{'no_create': True}" />
+            </field>
+            <!-- `quick_exec` is only ever shown when
+                 `exchange_file_auto_generate` is set, but that field is
+                 itself only shown (and settable) for direction="output" -
+                 so on an input type `quick_exec` is permanently hidden even
+                 though `_quick_exec_enabled()` never checks
+                 `exchange_file_auto_generate` for inputs at all. Show it
+                 for inputs too. -->
+            <field name="quick_exec" position="attributes">
+                <attribute
+                    name="invisible"
+                >direction == 'output' and not exchange_file_auto_generate</attribute>
+            </field>
+        </field>
+    </record>
+</odoo>

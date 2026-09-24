@@ -4,6 +4,10 @@ import json
 
 from odoo.addons.base.tests.common import BaseCommon
 
+from odoo.addons.import_via_xberg.models.base_import_pdf_template_line import (
+    _unescape_jsonpath_whitespace,
+)
+
 # A trimmed-down stand-in for `_add_table_cell_views(_to_jsonable(document))`
 # - enough structure to exercise `xberg_jsonpath` narrowing followed by a
 # regex `pattern`, for both a single header value and a multi-row column,
@@ -17,7 +21,7 @@ SAMPLE_ENVELOPE = {
                 ["2", "", "201P/90-0013"],
             ],
             "cellsByHeader": [
-                {"ITEM": "201P/90-0013"},
+                {"ITEM": "201P/90-0013", "Part\n Number": "23151592"},
                 {"ITEM": "300X/12-9999"},
             ],
         }
@@ -110,6 +114,18 @@ class TestXbergJsonpathNarrowing(BaseCommon):
         )
         self.assertEqual(line._get_field_value(SAMPLE_TEXT), title)
 
+    def test_wrapped_header_key_matched_via_escaped_newline(self):
+        # A PDF table header that wraps across two lines comes through
+        # extraction as a key containing a real newline character (see
+        # "Part\n Number" above). A user can't type a literal newline into
+        # the xberg_jsonpath Char field, so `\n` typed as two characters
+        # (backslash, n) must be understood the same way.
+        line = self._make_line(
+            xberg_jsonpath="$.tables[0].cellsByHeader[0]['Part\\n Number']",
+            pattern="(.+)",
+        )
+        self.assertEqual(line._get_field_value(SAMPLE_TEXT), "23151592")
+
     def test_non_xberg_template_ignores_xberg_jsonpath(self):
         # `xberg_jsonpath` is only meaningful on an `xberg` template - on
         # any other mode it must be a complete no-op, not even attempted
@@ -186,6 +202,13 @@ class TestXbergJsonpathPreview(BaseCommon):
         self.assertIn("1. '201P/90-0013'", preview)
         self.assertIn("2. '300X/12-9999'", preview)
 
+    def test_wrapped_header_key_matched_via_escaped_newline(self):
+        self.template.sample_data = SAMPLE_TEXT
+        line = self._make_line(
+            xberg_jsonpath="$.tables[0].cellsByHeader[0]['Part\\n Number']"
+        )
+        self.assertIn("'23151592'", line.xberg_jsonpath_preview)
+
     def test_no_match(self):
         self.template.sample_data = SAMPLE_TEXT
         line = self._make_line(xberg_jsonpath="$.tables[5].cells[0][0]")
@@ -214,3 +237,19 @@ class TestXbergJsonpathPreview(BaseCommon):
             }
         )
         self.assertFalse(line.xberg_jsonpath_preview)
+
+
+class TestUnescapeJsonpathWhitespace(BaseCommon):
+    """`_unescape_jsonpath_whitespace()` in isolation - the helper the
+    fields above exercise indirectly through the ORM."""
+
+    def test_newline_tab_and_carriage_return_are_unescaped(self):
+        self.assertEqual(
+            _unescape_jsonpath_whitespace("['Part\\n Number']"), "['Part\n Number']"
+        )
+        self.assertEqual(_unescape_jsonpath_whitespace("['A\\tB']"), "['A\tB']")
+        self.assertEqual(_unescape_jsonpath_whitespace("['A\\rB']"), "['A\rB']")
+
+    def test_expression_without_escapes_is_unchanged(self):
+        expression = "$.tables[0].cellsByHeader[*].ITEM"
+        self.assertEqual(_unescape_jsonpath_whitespace(expression), expression)

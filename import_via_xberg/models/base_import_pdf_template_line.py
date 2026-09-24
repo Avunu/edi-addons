@@ -12,12 +12,32 @@ except ImportError:  # pragma: no cover - external_dependencies covers this
     _jsonpath_parse = None
 
 
+_JSONPATH_WHITESPACE_ESCAPES = {
+    "\\n": "\n",
+    "\\t": "\t",
+    "\\r": "\r",
+}
+
+
+def _unescape_jsonpath_whitespace(expression):
+    """`xberg_jsonpath` is a plain Char field - users type literal `\\n` to
+    mean a newline, the way PDF table headers that wrap across lines
+    actually contain one (see `_transpose_table_cells()`). jsonpath-ng's own
+    lexer doesn't do this: its escape rule for quoted bracket keys just
+    drops the backslash and keeps the following character literally (so
+    `\\n` becomes the letter `n`, not a newline) - so do the substitution
+    ourselves before parsing."""
+    for escaped, real in _JSONPATH_WHITESPACE_ESCAPES.items():
+        expression = expression.replace(escaped, real)
+    return expression
+
+
 @lru_cache(maxsize=256)
 def _compile_jsonpath(expression):
     """jsonpath-ng builds a small PLY grammar on every parse() call - always
     cache compiled expressions, since the same pattern is evaluated once per
     row/match during a real import."""
-    return _jsonpath_parse(expression)
+    return _jsonpath_parse(_unescape_jsonpath_whitespace(expression))
 
 
 @lru_cache(maxsize=4)
@@ -57,7 +77,10 @@ class BaseImportPdfTemplateLine(models.Model):
         "to narrow a big, noisy document down to just the value or column "
         "you actually want a regex to search, e.g. "
         "`$.tables[0].cellsByHeader[*].ITEM` for every row's item number. "
-        "Left blank, `Pattern` matches the whole document as usual.",
+        "A bracket-quoted key may use `\\n`, `\\t`, `\\r` to match a "
+        "header that wraps across lines in the source PDF, e.g. "
+        "`['Part\\n Number']`. Left blank, `Pattern` matches the whole "
+        "document as usual.",
     )
     xberg_jsonpath_preview = fields.Text(
         string="Xberg JSONPath Preview",

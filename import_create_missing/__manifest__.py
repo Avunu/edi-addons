@@ -15,6 +15,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "views/base_import_pdf_template_line_create_value_views.xml",
         "views/base_import_pdf_template_line_views.xml",
     ],
     "installable": True,

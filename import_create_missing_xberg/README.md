@@ -1,6 +1,6 @@
 # Import Create Missing - Xberg Bridge
 
-Adds a **JSONPath** column to `import_create_missing`'s New Document Values table, on a line whose template uses the `xberg` extraction mode - the same idea as `import_via_xberg`'s own `xberg_jsonpath` on the line itself, applied to each New Document Values row instead.
+Adds a **JSONPath** field to `import_create_missing`'s New Document Values rows (and, recursively, to a nested one2many field's own Row Values rows), on a line whose template uses the `xberg` extraction mode - the same idea as `import_via_xberg`'s own `xberg_jsonpath` on the line itself, applied to each row instead.
 
 `auto_install`s once both `import_create_missing` and `import_via_xberg` are installed; neither of those two depends on the other.
 

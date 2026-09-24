@@ -4,7 +4,10 @@ import logging
 
 from odoo import models
 
-from .base_import_pdf_template_line import CREATE_MISSING_VALUES_KEY
+from .base_import_pdf_template_line import (
+    CREATE_MISSING_TEXT_KEY,
+    CREATE_MISSING_VALUES_KEY,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -56,6 +59,13 @@ class BaseImportPdfTemplate(models.Model):
         for create_value in line.create_value_ids:
             if not create_value.field_name or create_value.value_type != "variable":
                 continue
+            if create_value.field_ttype == "one2many":
+                # A one2many's own rows are extracted fresh from the whole
+                # document at creation time (see
+                # `create.value._extract_one2many_commands()`), not tied
+                # to this line's row position - it never participates in
+                # this per-row column alignment at all.
+                continue
             if not create_value._has_variable_source():
                 continue
             values = create_value._extract_column(text)
@@ -94,7 +104,10 @@ class BaseImportPdfTemplate(models.Model):
                         row[create_value_id] = values[index]
                     row_values[line_id] = None if line_id in skip_line_ids else row
                 res_line = self.with_context(
-                    **{CREATE_MISSING_VALUES_KEY: row_values}
+                    **{
+                        CREATE_MISSING_VALUES_KEY: row_values,
+                        CREATE_MISSING_TEXT_KEY: text,
+                    }
                 )._get_field_values_from_table_item(data_line)
                 if res_line:
                     res.append(res_line)
@@ -118,11 +131,18 @@ class BaseImportPdfTemplate(models.Model):
             for create_value in line.create_value_ids:
                 if not create_value.field_name or create_value.value_type != "variable":
                     continue
+                if create_value.field_ttype == "one2many":
+                    continue
                 if not create_value._has_variable_source():
                     continue
                 row[create_value.id] = create_value._extract_header(text)
             row_values[line.id] = row
         return super(
             BaseImportPdfTemplate,
-            self.with_context(**{CREATE_MISSING_VALUES_KEY: row_values}),
+            self.with_context(
+                **{
+                    CREATE_MISSING_VALUES_KEY: row_values,
+                    CREATE_MISSING_TEXT_KEY: text,
+                }
+            ),
         )._get_field_values(related_model, text)

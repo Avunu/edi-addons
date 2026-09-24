@@ -20,30 +20,15 @@
                     name="page_create_value_ids"
                     invisible="not create_missing"
                 >
-                    <field name="create_value_ids" context="{'default_line_id': id}">
-                        <list editable="bottom">
-                            <field name="sequence" widget="handle" />
-                            <field name="field_id" options="{'no_create': True}" />
-                            <field name="field_ttype" column_invisible="1" />
-                            <field name="field_relation" column_invisible="1" />
-                            <field name="value_type" />
-                            <field
-                                name="fixed_value"
-                                string="Value"
-                                invisible="value_type != 'fixed' or field_ttype in ('many2one', 'reference')"
-                            />
-                            <field
-                                name="fixed_value_ref"
-                                string="Value"
-                                invisible="value_type != 'fixed' or field_ttype not in ('many2one', 'reference')"
-                            />
-                            <field
-                                name="pattern"
-                                string="Pattern"
-                                invisible="value_type == 'fixed'"
-                            />
-                        </list>
-                    </field>
+                    <field
+                        name="create_value_ids"
+                        nolabel="1"
+                        context="{
+                            'list_view_ref': 'import_create_missing.base_import_pdf_template_line_create_value_view_tree',
+                            'form_view_ref': 'import_create_missing.base_import_pdf_template_line_create_value_view_form',
+                            'default_line_id': id,
+                        }"
+                    />
                 </page>
             </notebook>
         </field>

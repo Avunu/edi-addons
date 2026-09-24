@@ -1,24 +1,22 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <record id="base_import_pdf_template_line_view_form" model="ir.ui.view">
-        <field name="name">base.import.pdf.template.line.form.create_missing_xberg</field>
-        <field name="model">base.import.pdf.template.line</field>
+    <record id="base_import_pdf_template_line_create_value_view_form" model="ir.ui.view">
+        <field
+            name="name"
+        >base.import.pdf.template.line.create.value.form.create_missing_xberg</field>
+        <field name="model">base.import.pdf.template.line.create.value</field>
         <field
             name="inherit_id"
-            ref="import_create_missing.base_import_pdf_template_line_view_form"
+            ref="import_create_missing.base_import_pdf_template_line_create_value_view_form"
         />
         <field name="arch" type="xml">
-            <xpath
-                expr="//field[@name='create_value_ids']//field[@name='pattern']"
-                position="after"
-            >
+            <field name="pattern" position="after">
                 <field
                     name="xberg_jsonpath"
-                    column_invisible="parent.extraction_mode != 'xberg'"
-                    invisible="value_type == 'fixed'"
+                    invisible="not field_id or field_ttype == 'one2many' or value_type == 'fixed'"
                     placeholder="$.tables[1].cellsByHeader[*]['Description']"
                 />
-            </xpath>
+            </field>
         </field>
     </record>
 </odoo>

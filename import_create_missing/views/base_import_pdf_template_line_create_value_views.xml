@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Compact list: opens `..._view_form` below on a row click (same
+         list+form pattern base_import_pdf_by_template itself uses for
+         `base.import.pdf.template.line_ids` - see
+         `base_import_pdf_template_view_form`'s `line_ids` field). Needed
+         because this row's fields are heavily mutually-exclusive
+         (Value/Value-as-record/Pattern/JSONPath) - an editable inline
+         list has no way to truly hide a column per row, only per row
+         VALUE, so every one of those columns would show, always, with
+         its own "Value"-labeled header regardless of which row is
+         selected. A form's `invisible` genuinely removes the field
+         (and its label) from a given row's dialog instead. -->
+    <record id="base_import_pdf_template_line_create_value_view_tree" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.line.create.value.list</field>
+        <field name="model">base.import.pdf.template.line.create.value</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle" />
+                <field name="field_id" />
+                <field name="value_type" />
+                <field name="value_summary" />
+            </list>
+        </field>
+    </record>
+
+    <record id="base_import_pdf_template_line_create_value_view_form" model="ir.ui.view">
+        <field name="name">base.import.pdf.template.line.create.value.form</field>
+        <field name="model">base.import.pdf.template.line.create.value</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="line_id" invisible="1" />
+                        <field name="candidate_model_ids" invisible="1" />
+                        <field
+                            name="field_id"
+                            options="{'no_create': True}"
+                        />
+                        <field name="field_ttype" invisible="1" />
+                        <field name="field_relation" invisible="1" />
+                        <field
+                            name="value_type"
+                            widget="radio"
+                            options="{'horizontal': True}"
+                            invisible="not field_id or field_ttype == 'one2many'"
+                        />
+                        <field
+                            name="fixed_value"
+                            invisible="not field_id or field_ttype == 'one2many' or value_type != 'fixed' or field_ttype in ('many2one', 'reference')"
+                        />
+                        <field
+                            name="fixed_value_ref"
+                            invisible="not field_id or value_type != 'fixed' or field_ttype not in ('many2one', 'reference')"
+                        />
+                        <field
+                            name="pattern"
+                            invisible="not field_id or field_ttype == 'one2many' or value_type == 'fixed'"
+                        />
+                    </group>
+                    <notebook invisible="field_ttype != 'one2many'">
+                        <page string="Row Values" name="page_child_value_ids">
+                            <field
+                                name="child_value_ids"
+                                nolabel="1"
+                                context="{
+                                    'list_view_ref': 'import_create_missing.base_import_pdf_template_line_create_value_view_tree',
+                                    'form_view_ref': 'import_create_missing.base_import_pdf_template_line_create_value_view_form',
+                                    'default_line_id': line_id,
+                                    'default_parent_id': id,
+                                }"
+                            />
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

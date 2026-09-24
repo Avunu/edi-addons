@@ -17,6 +17,15 @@ _logger = logging.getLogger(__name__)
 #: `create_missing` itself needing to know the difference.
 CREATE_MISSING_VALUES_KEY = "import_create_missing_values"
 
+#: The whole extracted document, set alongside `CREATE_MISSING_VALUES_KEY`
+#: (same lifetime/guard). Every other field on a line is resolved from a
+#: single already-matched value, but a `one2many` New Document Values row
+#: (see `base.import.pdf.template.line.create.value._extract_one2many_
+#: commands()`) has to search the WHOLE document again for its own nested
+#: matches - there is no per-row-relative pattern language to hand it
+#: just "this row's slice" instead.
+CREATE_MISSING_TEXT_KEY = "import_create_missing_text"
+
 
 class BaseImportPdfTemplateLine(models.Model):
     _inherit = "base.import.pdf.template.line"
@@ -72,7 +81,7 @@ class BaseImportPdfTemplateLine(models.Model):
     def _prepare_create_missing_vals(self, value, row):
         self.ensure_one()
         vals = {}
-        target = self.env[self.field_relation]
+        text = self.env.context.get(CREATE_MISSING_TEXT_KEY)
         search_field = self.search_field_id
         if (
             search_field
@@ -90,7 +99,7 @@ class BaseImportPdfTemplateLine(models.Model):
             if not create_value.field_name:
                 continue
             create_value_value = create_value._to_create_value(
-                row.get(create_value.id)
+                row.get(create_value.id), text=text
             )
             if create_value_value is None:
                 continue

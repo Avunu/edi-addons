@@ -91,3 +91,24 @@ class TestEdiMailIntake(BaseCommon):
                 {"body": "<p>hi</p>"},
                 self._custom_values(type_code="does_not_exist"),
             )
+
+    def test_message_update_creates_a_new_exchange_record(self):
+        # Odoo's mail gateway calls message_update() (not message_new())
+        # whenever an inbound message's References/In-Reply-To headers match
+        # a Message-Id it already has on file - which happens whenever a
+        # mail client keeps two unrelated forwarded documents under the same
+        # subject/conversation. Each inbound EDI email must still become its
+        # own independent exchange record rather than being silently folded
+        # into the record message_update() was called on.
+        first = self.env["edi.exchange.record"].message_new(
+            {"body": "<p>first PO</p>", "message_id": "<first@example.com>"},
+            self._custom_values(),
+        )
+        second = first.message_update(
+            {"body": "<p>second PO</p>", "message_id": "<second@example.com>"},
+            self._custom_values(),
+        )
+        self.assertNotEqual(first.id, second.id)
+        self.assertEqual(second.type_id, self.exchange_type)
+        self.assertEqual(second.edi_exchange_state, "input_received")
+        self.assertIn("second PO", b64decode(second.exchange_file).decode())

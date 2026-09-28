@@ -43,6 +43,7 @@ class BaseImportPdfTemplate(models.Model):
         for line in create_missing_lines:
             by_line[line.id] = self._extract_create_missing_columns(line, text, row_count)
         res["create_missing"] = by_line
+        res[CREATE_MISSING_TEXT_KEY] = text
         return res
 
     def _extract_create_missing_columns(self, line, text, row_count):
@@ -106,7 +107,7 @@ class BaseImportPdfTemplate(models.Model):
                 res_line = self.with_context(
                     **{
                         CREATE_MISSING_VALUES_KEY: row_values,
-                        CREATE_MISSING_TEXT_KEY: text,
+                        CREATE_MISSING_TEXT_KEY: table_info.get(CREATE_MISSING_TEXT_KEY),
                     }
                 )._get_field_values_from_table_item(data_line)
                 if res_line:

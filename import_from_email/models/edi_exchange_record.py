@@ -80,3 +80,22 @@ class EdiExchangeRecord(models.Model):
                 "edi_exchange_state": "input_received",
             },
         )
+
+    def message_update(self, msg_dict, update_vals=None):
+        """Never treat an inbound email as an update to a previous exchange.
+
+        Odoo's mail gateway (`mail.thread.message_route()`) resolves an
+        inbound message as "a reply" purely from its References/In-Reply-To
+        headers matching a stored Message-Id - it does not require the
+        message to actually be about the same document. Several mail
+        clients keep every forwarded email under one subject/conversation
+        (e.g. repeated manual forwards of separate purchase orders that
+        happen to share an identical subject line), so their References
+        chains collide with a previously received exchange even though each
+        is a distinct document - and Odoo would otherwise silently fold the
+        new one into the old record's chatter via this method instead of
+        ever calling `message_new()` for it. Every inbound EDI email is its
+        own independent exchange, so redirect through `message_new()`
+        instead.
+        """
+        return self.message_new(msg_dict, update_vals)

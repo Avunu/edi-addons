@@ -13,7 +13,7 @@
             <field name="pattern" position="after">
                 <field
                     name="xberg_jsonpath"
-                    invisible="not field_id or field_ttype == 'one2many' or value_type == 'fixed'"
+                    invisible="not field_id or field_ttype == 'one2many' or value_type != 'variable'"
                     placeholder="$.tables[1].cellsByHeader[*]['Description']"
                 />
             </field>

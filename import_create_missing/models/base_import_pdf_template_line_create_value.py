@@ -1,17 +1,23 @@
 # Copyright 2026 Avunu LLC (avu.nu)
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+from __future__ import annotations
+
+import json
 import logging
+from collections.abc import Collection, Iterable
+from typing import Any
 
 from odoo import api, fields, models
 
-_logger = logging.getLogger(__name__)
+from .create_field_spec import (
+    FIXED_VALUE_FIELD,
+    CreateFieldSpec,
+    fixed_value_kind,
+    required_field_names,
+    required_field_specs,
+)
 
-#: Same mapping `base.import.pdf.template.line._get_fixed_field_name_ttype_
-#: mapped()` uses for ITS OWN typed fixed_value_* fields - kept here only
-#: as the set of ttypes a plain-Char `fixed_value` can be reasonably cast
-#: into. `many2one`/`reference`/`one2many` are handled separately (see
-#: `_to_create_value()`), never through this cast.
-_CASTABLE_FIXED_TTYPES = ("char", "text", "html", "integer", "float", "boolean", "json")
+_logger = logging.getLogger(__name__)
 
 
 class BaseImportPdfTemplateLineCreateValue(models.Model):
@@ -52,10 +58,12 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         help="Only meaningful when Field is a one2many - one field-value "
         "per field of the one2many's own model (e.g. a vendor's "
         "partner_id/price/min_qty), the same Field/Type/Value/Pattern "
-        "shape as this table itself. Each Variable row here is extracted "
-        "fresh from the whole document (not tied to this line's own "
-        "row position) and rows are paired across every Variable child "
-        "by JSONPath/Pattern match position - see the README.",
+        "shape as this table itself. Pre-filled with that model's own "
+        "required fields the moment you pick the one2many. Each Variable "
+        "row here is extracted fresh from the whole document (not tied to "
+        "this line's own row position) and rows are paired across every "
+        "Variable child by JSONPath/Pattern match position - see the "
+        "README.",
     )
     #: All models `field_id`'s domain should match against: `model` itself
     #: plus any model it delegates fields from via `_inherits` (e.g.
@@ -86,16 +94,55 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
     field_ttype = fields.Selection(related="field_id.ttype")
     field_relation = fields.Char(related="field_id.relation")
     value_type = fields.Selection(
-        selection=[("fixed", "Fixed"), ("variable", "Variable")],
+        selection=[
+            ("fixed", "Fixed"),
+            ("variable", "Variable"),
+            ("odoo_default", "Odoo Default"),
+        ],
         default="variable",
         required=True,
         string="Type",
+        help="Fixed: always this value. Variable: extracted from the "
+        "document with the Pattern (or JSONPath) below. Odoo Default: "
+        "leave the field out of the create entirely, so Odoo applies its "
+        "own default - used for a required field whose default is "
+        "computed at creation time (a date/datetime that means 'now'), "
+        "where snapshotting a value into the template would be wrong.",
+    )
+    #: Which typed `fixed_value_*` column this row's `Fixed` value lives
+    #: in - see `create_field_spec.FIXED_VALUE_FIELD`. Drives which single
+    #: input the form shows, so the view never has to repeat the
+    #: ttype-to-widget mapping that Python already owns.
+    fixed_value_kind = fields.Selection(
+        selection=[
+            ("char", "Text"),
+            ("boolean", "Boolean"),
+            ("integer", "Integer"),
+            ("float", "Float"),
+            ("selection", "Selection"),
+            ("date", "Date"),
+            ("datetime", "Datetime"),
+            ("record", "Record"),
+        ],
+        compute="_compute_fixed_value_kind",
     )
     fixed_value = fields.Char(
         string="Value",
-        help="Used for every field type except many2one/reference, where "
-        "the record picker below is used instead. Converted according to "
-        "the field's own type (integer, float, boolean, ...).",
+        help="Used for a text/html/json field. Other field types get a "
+        "typed input of their own (a checkbox, a number, a dropdown, a "
+        "date picker or a record picker).",
+    )
+    fixed_value_boolean = fields.Boolean(string="Value")
+    fixed_value_integer = fields.Integer(string="Value")
+    fixed_value_float = fields.Float(string="Value")
+    fixed_value_date = fields.Date(string="Value")
+    fixed_value_datetime = fields.Datetime(string="Value")
+    fixed_value_selection_id = fields.Many2one(
+        comodel_name="ir.model.fields.selection",
+        string="Value",
+        domain="[('field_id', '=', field_id)]",
+        ondelete="cascade",
+        help="The selection option to set, for a selection field.",
     )
     fixed_value_ref = fields.Reference(
         selection="_selection_reference_value",
@@ -118,6 +165,19 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         "mutually exclusive per row, showing all of them as columns at "
         "once is confusing; open a row to edit it.",
     )
+    is_required = fields.Boolean(
+        compute="_compute_is_required",
+        string="Required",
+        help="Whether the document being created genuinely requires this "
+        "field - i.e. `create()` would reject the record without it.",
+    )
+    has_missing_required = fields.Boolean(
+        compute="_compute_has_missing_required",
+        string="Missing",
+        help="This row (or, for a one2many, one of its Row Values) is a "
+        "required field with no Odoo default and nothing set - the "
+        "document creation will fail unless it is filled in.",
+    )
 
     @api.model
     def _selection_reference_value(self):
@@ -127,6 +187,21 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             .search([("transient", "=", False)], order="name asc")
         )
         return [(model.model, model.name) for model in installed_models]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Let a nested row inherit its parent's `line_id`.
+
+        `line_id` is required on every row, nested or not (see its help),
+        but the Row Values table auto-populated by
+        `_onchange_field_id_children()` is built before the outer row
+        exists - there is no `default_line_id` for the client to hand the
+        nested rows, and on an unsaved line there is no id to hand either.
+        """
+        for vals in vals_list:
+            if not vals.get("line_id") and vals.get("parent_id"):
+                vals["line_id"] = self.browse(vals["parent_id"]).line_id.id
+        return super().create(vals_list)
 
     @api.depends("parent_id.field_relation", "line_id.field_relation")
     def _compute_model(self):
@@ -165,48 +240,347 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 self.env["ir.model"].sudo().search([("model", "in", model_names)])
             )
 
+    @api.depends("field_ttype", "field_id")
+    def _compute_fixed_value_kind(self):
+        for rec in self:
+            if not rec.field_id:
+                rec.fixed_value_kind = False
+                continue
+            # `.sudo()`: `ir.model.fields.selection` is unreadable to
+            # `base.group_user`, and this compute runs for any user who can
+            # so much as look at a template.
+            has_options = bool(rec.field_id.sudo().selection_ids)
+            rec.fixed_value_kind = (
+                fixed_value_kind(rec.field_ttype, has_options) or False
+            )
+
+    # -------------------------------------------------------------------
+    # Required-field discovery
+    # -------------------------------------------------------------------
+
+    def _required_scope_exclude(self) -> tuple[str, ...]:
+        """Field names that must NOT be reported as missing (nor
+        auto-added) in this row's own scope.
+
+        A nested row's scope is its parent one2many's comodel, whose
+        inverse many2one is set by the one2many command itself; a
+        top-level row's scope is the document being created, whose search
+        field is pre-filled with the value that missed (see
+        `base.import.pdf.template.line._create_missing_prefill_field_name()`).
+        """
+        self.ensure_one()
+        if self.parent_id:
+            inverse = self.parent_id.field_id.sudo().relation_field
+            return (inverse,) if inverse else ()
+        prefill = self.line_id._create_missing_prefill_field_name()
+        return (prefill,) if prefill else ()
+
+    @api.depends(
+        "model",
+        "field_name",
+        "parent_id.field_id",
+        "line_id.search_field_id",
+        "line_id.search_subfield_id",
+        "line_id.field_id",
+    )
+    def _compute_is_required(self):
+        names_by_model: dict[tuple[str, tuple[str, ...]], frozenset[str]] = {}
+        for rec in self:
+            model_name = rec.model
+            if not model_name or model_name not in rec.env:
+                rec.is_required = False
+                continue
+            key = (model_name, rec._required_scope_exclude())
+            if key not in names_by_model:
+                names_by_model[key] = required_field_names(
+                    rec.env[model_name], exclude=key[1]
+                )
+            rec.is_required = rec.field_name in names_by_model[key]
+
+    @api.model
+    def _value_depends(self) -> tuple[str, ...]:
+        """Every field that can change what a row actually contributes -
+        the `@api.depends` of the summary and of the missing-value flag.
+        Built from `FIXED_VALUE_FIELD` plus `_variable_source_fields()` so
+        adding a typed column or another extraction seam (e.g.
+        `import_create_missing_xberg`'s JSONPath) updates both computes
+        without touching either decorator."""
+        return (
+            "field_id",
+            "field_ttype",
+            "value_type",
+            "child_value_ids",
+            *FIXED_VALUE_FIELD.values(),
+            *self._variable_source_fields(),
+        )
+
+    def _variable_source_fields(self) -> tuple[str, ...]:
+        """The fields a `variable` row can be driven by. The seam a bridge
+        module widens - see `import_create_missing_xberg`, which adds
+        `xberg_jsonpath` - so `_has_variable_source()` and every
+        `@api.depends` built on it pick the new source up together."""
+        return ("pattern",)
+
+    def _has_variable_source(self) -> bool:
+        """Whether a `variable` row has anything to actually extract with."""
+        self.ensure_one()
+        return any(self[name] for name in self._variable_source_fields())
+
+    def _has_value(self) -> bool:
+        """Whether this row will genuinely contribute something to the
+        document being created - the test behind `has_missing_required`."""
+        self.ensure_one()
+        if self.value_type == "odoo_default":
+            return True
+        if self.field_ttype == "one2many":
+            return bool(self.child_value_ids)
+        if self.value_type == "fixed":
+            return self._fixed_create_value() is not None
+        return self._has_variable_source()
+
+    @api.model
+    def _missing_required_labels(
+        self,
+        rows: models.Model,
+        model_name: str,
+        exclude: Collection[str] = (),
+        prefix: str = "",
+    ) -> list[str]:
+        """Human labels for every required field of `model_name` that
+        `rows` leave genuinely unset - i.e. no Odoo default to fall back
+        on and no row that contributes a value - recursing into each
+        one2many row's own Row Values.
+
+        Shared by the line's warning banner and the per-row `Missing`
+        flag so the two can never disagree about what counts as missing.
+        """
+        if not model_name or model_name not in self.env:
+            return []
+        rows_by_name: dict[str, models.Model] = {}
+        for row in rows:
+            if row.field_name and row.field_name not in rows_by_name:
+                rows_by_name[row.field_name] = row
+        labels: list[str] = []
+        for spec in required_field_specs(self.env[model_name], exclude=exclude):
+            if spec.has_default:
+                continue
+            row = rows_by_name.get(spec.name)
+            if row is not None and row._has_value():
+                continue
+            labels.append(f"{prefix}{spec.label}")
+        for row in rows:
+            if row.field_ttype != "one2many" or not row.child_value_ids:
+                # An empty one2many creates no sub-record at all, so its
+                # comodel's required fields are not needed yet.
+                continue
+            inverse = row.field_id.sudo().relation_field
+            labels += self._missing_required_labels(
+                row.child_value_ids,
+                row.field_relation,
+                exclude=(inverse,) if inverse else (),
+                prefix=f"{prefix}{row.field_id.field_description} › ",
+            )
+        return labels
+
+    def _required_spec(self, cache: dict | None = None) -> CreateFieldSpec | None:
+        """The `CreateFieldSpec` for this row's OWN field, or `None` when
+        the field isn't required in this row's scope. `cache` (keyed by
+        model + scope) keeps a table of rows from re-running
+        `default_get()` once per row."""
+        self.ensure_one()
+        if not self.field_name or not self.model or self.model not in self.env:
+            return None
+        key = (self.model, self._required_scope_exclude())
+        if cache is None:
+            cache = {}
+        if key not in cache:
+            cache[key] = {
+                spec.name: spec
+                for spec in required_field_specs(self.env[key[0]], exclude=key[1])
+            }
+        return cache[key].get(self.field_name)
+
+    def _is_missing_required(self, cache: dict | None = None) -> bool:
+        """Whether this row leaves something the document genuinely needs
+        unset - itself, or (for a one2many) inside its Row Values."""
+        self.ensure_one()
+        if not self.field_id:
+            return False
+        if self.field_ttype == "one2many" and self.child_value_ids:
+            inverse = self.field_id.sudo().relation_field
+            if self._missing_required_labels(
+                self.child_value_ids,
+                self.field_relation,
+                exclude=(inverse,) if inverse else (),
+            ):
+                return True
+        spec = self._required_spec(cache)
+        if spec is None or spec.has_default:
+            # Not required here, or Odoo will fill it in itself.
+            return False
+        return not self._has_value()
+
+    @api.depends(
+        lambda self: (
+            *self._value_depends(),
+            "model",
+            "child_value_ids.has_missing_required",
+        )
+    )
+    def _compute_has_missing_required(self):
+        cache: dict = {}
+        for rec in self:
+            rec.has_missing_required = rec._is_missing_required(cache)
+
+    # -------------------------------------------------------------------
+    # Auto-population
+    # -------------------------------------------------------------------
+
+    @api.model
+    def _row_vals_from_spec(
+        self, spec: CreateFieldSpec, sequence: int = 10
+    ) -> dict[str, Any]:
+        """Create-vals for the row that fills `spec`.
+
+        A required field Odoo has no default for becomes an empty
+        `Variable` row - the user still has to say where the value comes
+        from, which is the whole point of surfacing it. One Odoo DOES
+        default becomes a `Fixed` row pre-set to that default, so the
+        default is visible and editable rather than invisible; except when
+        the default cannot be meaningfully frozen into a template (a
+        date/datetime default almost always means "now"), where the row
+        says `Odoo Default` and leaves the field out of the create.
+        """
+        vals: dict[str, Any] = {"field_id": spec.field_id, "sequence": sequence}
+        kind = fixed_value_kind(spec.ttype)
+        if not spec.has_default or spec.ttype == "one2many":
+            vals["value_type"] = "variable"
+            return vals
+        if kind in (None, "date", "datetime"):
+            vals["value_type"] = "odoo_default"
+            return vals
+        vals["value_type"] = "fixed"
+        if kind == "record":
+            if spec.comodel and spec.default:
+                vals["fixed_value_ref"] = f"{spec.comodel},{int(spec.default)}"
+            else:
+                vals["value_type"] = "odoo_default"
+        elif kind == "selection":
+            option = (
+                self.env["ir.model.fields.selection"]
+                .sudo()
+                .search(
+                    [("field_id", "=", spec.field_id), ("value", "=", spec.default)],
+                    limit=1,
+                )
+            )
+            if option:
+                vals["fixed_value_selection_id"] = option.id
+            else:
+                vals["value_type"] = "odoo_default"
+        elif kind == "char":
+            vals["fixed_value"] = (
+                json.dumps(spec.default)
+                if spec.ttype == "json"
+                else str(spec.default)
+            )
+        else:
+            vals[FIXED_VALUE_FIELD[kind]] = spec.default
+        return vals
+
+    @api.model
+    def _required_rows_vals(
+        self,
+        model_name: str,
+        existing: Iterable[str] = (),
+        exclude: Collection[str] = (),
+        start_sequence: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Create-vals for every required field of `model_name` that
+        `existing` (field names already in the table) doesn't cover."""
+        if not model_name or model_name not in self.env:
+            return []
+        covered = set(existing)
+        sequence = start_sequence
+        vals_list: list[dict[str, Any]] = []
+        for spec in required_field_specs(self.env[model_name], exclude=exclude):
+            if spec.name in covered:
+                continue
+            sequence += 10
+            vals_list.append(self._row_vals_from_spec(spec, sequence))
+        return vals_list
+
+    @api.onchange("field_id")
+    def _onchange_field_id_children(self):
+        """Pre-fill a one2many row's Row Values with its comodel's own
+        required fields, the moment the one2many is picked - the nested
+        half of what `base.import.pdf.template.line._onchange_create_missing()`
+        does for the outer table. Only ever fills an EMPTY Row Values
+        table, so a user's own rows are never disturbed."""
+        for rec in self:
+            if rec.field_ttype != "one2many" or rec.child_value_ids:
+                continue
+            if not rec.field_relation or rec.field_relation not in rec.env:
+                continue
+            inverse = rec.field_id.sudo().relation_field
+            vals_list = rec._required_rows_vals(
+                rec.field_relation, exclude=(inverse,) if inverse else ()
+            )
+            if vals_list:
+                rec.child_value_ids = [
+                    fields.Command.create(vals) for vals in vals_list
+                ]
+
+    # -------------------------------------------------------------------
+    # Summary
+    # -------------------------------------------------------------------
+
+    def _fixed_value_display(self):
+        """This row's `Fixed` value, rendered for the compact list."""
+        self.ensure_one()
+        kind = self.fixed_value_kind
+        if not kind:
+            return False
+        if kind == "record":
+            return self.fixed_value_ref.display_name if self.fixed_value_ref else False
+        if kind == "selection":
+            option = self.fixed_value_selection_id.sudo()
+            return option.name if option else False
+        if kind == "boolean":
+            return self.env._("Yes") if self.fixed_value_boolean else self.env._("No")
+        value = self[FIXED_VALUE_FIELD[kind]]
+        if value in (False, None, ""):
+            return False
+        return str(value)
+
     def _value_summary_text(self):
         self.ensure_one()
         if not self.field_id:
             return False
+        if self.value_type == "odoo_default":
+            return self.env._("Odoo default")
         if self.field_ttype == "one2many":
             return self.env._("%s row template(s)", len(self.child_value_ids))
         if self.value_type == "fixed":
-            if self.field_ttype in ("many2one", "reference"):
-                return self.fixed_value_ref.display_name if self.fixed_value_ref else False
-            return self.fixed_value
-        # Variable: prefer JSONPath when a bridge module (e.g.
-        # `import_create_missing_xberg`) has added it and it's set -
-        # `getattr` rather than `self.xberg_jsonpath` directly since the
-        # field doesn't exist at all without that module installed.
-        jsonpath = getattr(self, "xberg_jsonpath", False)
-        if jsonpath:
-            return self.env._("JSONPath: %s", jsonpath)
-        if self.pattern:
-            return self.env._("Pattern: %s", self.pattern)
+            return self._fixed_value_display() or self.env._("⚠ No value set.")
+        for name in self._variable_source_fields():
+            value = self[name]
+            if value:
+                return self.env._(
+                    "%(label)s: %(value)s",
+                    label=self._fields[name].string,
+                    value=value,
+                )
         return self.env._("⚠ No pattern/JSONPath set.")
 
-    @api.depends(
-        "field_id",
-        "field_ttype",
-        "value_type",
-        "fixed_value",
-        "fixed_value_ref",
-        "pattern",
-        "child_value_ids",
-    )
+    @api.depends(lambda self: self._value_depends())
     def _compute_value_summary(self):
         for rec in self:
             rec.value_summary = rec._value_summary_text()
 
-    def _has_variable_source(self):
-        """Whether a `variable` row has anything to actually extract with.
-        Split out as its own method (rather than inlined where it's used)
-        so a module adding another extraction seam - e.g.
-        `import_create_missing_xberg`'s `xberg_jsonpath` - can widen this
-        instead of duplicating the row-skip logic around it."""
-        self.ensure_one()
-        return bool(self.pattern)
+    # -------------------------------------------------------------------
+    # Extraction
+    # -------------------------------------------------------------------
 
     def _proxy_line_vals(self):
         """The values used to build `_proxy_line()` - split out so a
@@ -267,6 +641,10 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         `None` if a future caller adds one without threading it through).
         """
         self.ensure_one()
+        if self.value_type == "odoo_default":
+            # Deliberately absent from the create-vals: that IS how Odoo's
+            # own default gets applied.
+            return None
         if self.field_ttype == "one2many":
             commands = self._extract_one2many_commands(text)
             return commands or None
@@ -359,37 +737,115 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         return commands
 
     def _fixed_create_value(self):
+        """This row's `Fixed` value, in `create()` format - or `None` when
+        nothing is set, so the caller leaves the key out entirely rather
+        than writing an empty value over Odoo's own default."""
         self.ensure_one()
-        if self.field_ttype in ("many2one", "reference"):
-            return self.fixed_value_ref.id if self.fixed_value_ref else None
-        if self.fixed_value in (False, None, ""):
+        kind = self.fixed_value_kind
+        if not kind:
             return None
-        if self.field_ttype not in _CASTABLE_FIXED_TTYPES:
-            return self.fixed_value
-        if self.field_ttype == "integer":
+        if kind == "record":
+            return self.fixed_value_ref.id if self.fixed_value_ref else None
+        if kind == "selection":
+            # `.sudo()` for the same reason the base module's own
+            # `_get_fixed_value()` uses it: `ir.model.fields.selection` is
+            # not readable by an ordinary user, and this runs mid-import.
+            option = self.fixed_value_selection_id.sudo()
+            return option.value if option else None
+        if kind in ("boolean", "integer", "float"):
+            # A deliberate False/0 is a real value here, not an omission.
+            return self[FIXED_VALUE_FIELD[kind]]
+        value = self[FIXED_VALUE_FIELD[kind]]
+        if value in (False, None, ""):
+            return None
+        if kind == "char" and self.field_ttype == "json":
             try:
-                return int(self.fixed_value)
+                return json.loads(value)
             except ValueError:
                 _logger.warning(
-                    "New Document Values row %s: %r is not a valid integer "
-                    "for field %s.",
+                    "New Document Values row %s: %r is not valid JSON for "
+                    "field %s.",
                     self.id,
-                    self.fixed_value,
+                    value,
                     self.field_name,
                 )
                 return None
-        if self.field_ttype == "float":
-            try:
-                return float(self.fixed_value)
-            except ValueError:
-                _logger.warning(
-                    "New Document Values row %s: %r is not a valid float "
-                    "for field %s.",
-                    self.id,
-                    self.fixed_value,
-                    self.field_name,
+        return value
+
+    # -------------------------------------------------------------------
+    # Migration
+    # -------------------------------------------------------------------
+
+    @api.model
+    def _migrate_legacy_fixed_value(self):
+        """Move pre-1.1.0 `Fixed` values out of the single Char column
+        into the typed one for their field type.
+
+        Before 1.1.0 every fixed value was stored as text in
+        `fixed_value` and cast at import time; a boolean read "True", a
+        selection held its raw key. The casts below are deliberately the
+        OLD ones, so a template keeps meaning exactly what it meant
+        before. Anything that doesn't parse is left in place and logged
+        rather than silently dropped.
+        """
+        rows = self.search([("value_type", "=", "fixed"), ("fixed_value", "!=", False)])
+        for row in rows:
+            kind = row.fixed_value_kind
+            raw = row.fixed_value
+            if kind in (None, False, "char", "record"):
+                continue
+            vals = {}
+            if kind == "boolean":
+                vals["fixed_value_boolean"] = raw.strip().lower() in (
+                    "1",
+                    "true",
+                    "yes",
+                    "y",
                 )
-                return None
-        if self.field_ttype == "boolean":
-            return self.fixed_value.strip().lower() in ("1", "true", "yes", "y")
-        return self.fixed_value
+            elif kind == "integer":
+                try:
+                    vals["fixed_value_integer"] = int(raw)
+                except ValueError:
+                    _logger.warning(
+                        "New Document Values row %s: cannot migrate %r to an "
+                        "integer value; left as text.", row.id, raw
+                    )
+                    continue
+            elif kind == "float":
+                try:
+                    vals["fixed_value_float"] = float(raw)
+                except ValueError:
+                    _logger.warning(
+                        "New Document Values row %s: cannot migrate %r to a "
+                        "float value; left as text.", row.id, raw
+                    )
+                    continue
+            elif kind == "selection":
+                option = (
+                    self.env["ir.model.fields.selection"]
+                    .sudo()
+                    .search(
+                        [("field_id", "=", row.field_id.id), ("value", "=", raw)],
+                        limit=1,
+                    )
+                )
+                if not option:
+                    _logger.warning(
+                        "New Document Values row %s: %r is not an option of "
+                        "%s; left as text.", row.id, raw, row.field_name
+                    )
+                    continue
+                vals["fixed_value_selection_id"] = option.id
+            elif kind in ("date", "datetime"):
+                field = self._fields[FIXED_VALUE_FIELD[kind]]
+                try:
+                    vals[FIXED_VALUE_FIELD[kind]] = field.convert_to_cache(raw, row)
+                except ValueError:
+                    _logger.warning(
+                        "New Document Values row %s: cannot migrate %r to a "
+                        "%s value; left as text.", row.id, raw, kind
+                    )
+                    continue
+            vals["fixed_value"] = False
+            row.write(vals)
+        return True

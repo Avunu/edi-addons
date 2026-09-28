@@ -23,8 +23,13 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         "whole extracted document.",
     )
 
-    def _has_variable_source(self):
-        return super()._has_variable_source() or bool(self.xberg_jsonpath)
+    def _variable_source_fields(self):
+        """Widen the module's own extraction-source seam rather than
+        overriding `_has_variable_source()`: everything built on it -
+        the value summary, the `Missing` flag and their `@api.depends` -
+        then picks JSONPath up automatically, instead of each needing its
+        own xberg-aware override."""
+        return super()._variable_source_fields() + ("xberg_jsonpath",)
 
     def _proxy_line_vals(self):
         vals = super()._proxy_line_vals()

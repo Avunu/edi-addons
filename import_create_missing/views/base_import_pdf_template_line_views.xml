@@ -8,6 +8,14 @@
             ref="base_import_pdf_by_template.base_import_pdf_template_line_view_form"
         />
         <field name="arch" type="xml">
+            <!-- `js_class` only takes effect when the line opens as a full
+                 form (the dialog's expand button, or a direct action) -
+                 an x2many dialog renders the arch with its own controller
+                 and ignores it. The dialog path is covered by the patch on
+                 `X2ManyFieldDialog` in the same asset file. -->
+            <form position="attributes">
+                <attribute name="js_class">import_create_missing_line_form</attribute>
+            </form>
             <field name="log_distinct_value" position="after">
                 <field
                     name="create_missing"
@@ -20,6 +28,24 @@
                     name="page_create_value_ids"
                     invisible="not create_missing"
                 >
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="not create_missing_warning"
+                    >
+                        <field name="create_missing_warning" readonly="1" nolabel="1" />
+                    </div>
+                    <div class="mb-2">
+                        <button
+                            name="action_add_required_create_values"
+                            type="object"
+                            string="Add Required Fields"
+                            class="btn-secondary"
+                            icon="fa-magic"
+                            invisible="not id"
+                            help="Add a row for every required field of the document to create that has none yet. Existing rows are never changed."
+                        />
+                    </div>
                     <field
                         name="create_value_ids"
                         nolabel="1"

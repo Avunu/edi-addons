@@ -57,7 +57,7 @@ class BaseImportPdfTemplate(models.Model):
         worse than not creating one at all.
         """
         columns = {}
-        for create_value in line.create_value_ids:
+        for create_value in line._top_level_create_values():
             if not create_value.field_name or create_value.value_type != "variable":
                 continue
             if create_value.field_ttype == "one2many":
@@ -129,7 +129,7 @@ class BaseImportPdfTemplate(models.Model):
         row_values = {}
         for line in create_missing_lines:
             row = {}
-            for create_value in line.create_value_ids:
+            for create_value in line._top_level_create_values():
                 if not create_value.field_name or create_value.value_type != "variable":
                     continue
                 if create_value.field_ttype == "one2many":

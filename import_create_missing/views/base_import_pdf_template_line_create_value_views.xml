@@ -15,11 +15,16 @@
         <field name="name">base.import.pdf.template.line.create.value.list</field>
         <field name="model">base.import.pdf.template.line.create.value</field>
         <field name="arch" type="xml">
-            <list>
+            <!-- A row that still needs something is highlighted rather
+                 than blocked: the user is free to fill the table in any
+                 order, and over several sittings. -->
+            <list decoration-warning="has_missing_required">
                 <field name="sequence" widget="handle" />
                 <field name="field_id" />
+                <field name="is_required" widget="boolean" optional="show" />
                 <field name="value_type" />
                 <field name="value_summary" />
+                <field name="has_missing_required" column_invisible="1" />
             </list>
         </field>
     </record>
@@ -30,34 +35,84 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="not has_missing_required"
+                    >
+                        This field is required by the document being created and
+                        has no value yet. You can still save and come back to it -
+                        the document simply will not be created until it is filled
+                        in.
+                    </div>
                     <group>
                         <field name="line_id" invisible="1" />
                         <field name="candidate_model_ids" invisible="1" />
+                        <field name="has_missing_required" invisible="1" />
+                        <field name="fixed_value_kind" invisible="1" />
                         <field
                             name="field_id"
                             options="{'no_create': True}"
                         />
                         <field name="field_ttype" invisible="1" />
                         <field name="field_relation" invisible="1" />
+                        <field name="is_required" invisible="not field_id" />
                         <field
                             name="value_type"
                             widget="radio"
                             options="{'horizontal': True}"
                             invisible="not field_id or field_ttype == 'one2many'"
                         />
+                        <!-- Typed Fixed value: exactly one of these shows,
+                             picked by `fixed_value_kind` - the same mapping
+                             `_fixed_create_value()` reads, so the input and
+                             the value that ends up in the document can never
+                             drift apart. -->
                         <field
                             name="fixed_value"
-                            invisible="not field_id or field_ttype == 'one2many' or value_type != 'fixed' or field_ttype in ('many2one', 'reference')"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'char'"
+                        />
+                        <field
+                            name="fixed_value_boolean"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'boolean'"
+                        />
+                        <field
+                            name="fixed_value_integer"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'integer'"
+                        />
+                        <field
+                            name="fixed_value_float"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'float'"
+                        />
+                        <field
+                            name="fixed_value_selection_id"
+                            options="{'no_create': True, 'no_open': True}"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'selection'"
+                        />
+                        <field
+                            name="fixed_value_date"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'date'"
+                        />
+                        <field
+                            name="fixed_value_datetime"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'datetime'"
                         />
                         <field
                             name="fixed_value_ref"
-                            invisible="not field_id or value_type != 'fixed' or field_ttype not in ('many2one', 'reference')"
+                            invisible="value_type != 'fixed' or fixed_value_kind != 'record'"
                         />
                         <field
                             name="pattern"
-                            invisible="not field_id or field_ttype == 'one2many' or value_type == 'fixed'"
+                            invisible="not field_id or field_ttype == 'one2many' or value_type != 'variable'"
                         />
                     </group>
+                    <div
+                        class="text-muted"
+                        invisible="value_type != 'odoo_default'"
+                    >
+                        This field is left out of the new document entirely, so
+                        Odoo applies its own default when the document is created.
+                    </div>
                     <notebook invisible="field_ttype != 'one2many'">
                         <page string="Row Values" name="page_child_value_ids">
                             <field

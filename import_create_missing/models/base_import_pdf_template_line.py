@@ -75,6 +75,19 @@ class BaseImportPdfTemplateLine(models.Model):
                 value,
                 err,
             )
+            env["ir.logging"].sudo().create(
+                {
+                    "name": f"Line {self.id}: failed to create a missing "
+                    f"{self.field_relation} record for {value!r}: {err}",
+                    "type": "server",
+                    "dbname": self.env.cr.dbname,
+                    "level": "warning",
+                    "message": err,
+                    "path": "base_import_pdf_template_line.py",
+                    "func": "_get_record_search_from_value",
+                    "line": "88",
+                }
+            )
             return self.env[self.field_relation]
         return record
 

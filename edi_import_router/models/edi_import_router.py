@@ -5,9 +5,13 @@ from typesafe_sdk import TypeSafeClient
 from odoo import api, fields, models
 
 DEFAULT_INSTRUCTIONS = (
-    "Which of these document types is this document? Judge by who sent or "
-    "issued it, its title and its layout. Answer 'none' if it is not one of "
-    "them."
+    "Which of these document types is this document? Judge by who issued it, "
+    "its title and its layout. Documents are usually forwarded by staff, so "
+    "the sender may be the shop's own mailbox and the subject may start with "
+    "'Fwd:'; the issuer is named in the forwarded message, and 'original "
+    "from' (when given) is the real sender. A forwarded copy of a vendor "
+    "document is that document, not 'none'. Answer 'none' only when it "
+    "clearly is not one of them."
 )
 
 
@@ -38,6 +42,13 @@ class EdiImportRouter(models.Model):
         help="A document is filed automatically only when TypeSafe's "
         "confidence in its answer is at least this high; anything less waits "
         "for a person to confirm it.",
+    )
+    ignore_threshold = fields.Float(
+        default=0.98,
+        help="A document is ignored (rather than sent to review) only when "
+        "TypeSafe answers 'none' with at least this much confidence. A wrongly "
+        "ignored order is far worse than an extra review item, so this is "
+        "stricter than the filing threshold.",
     )
     responsible_user_id = fields.Many2one(
         "res.users",

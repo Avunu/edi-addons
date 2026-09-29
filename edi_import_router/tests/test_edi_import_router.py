@@ -221,9 +221,34 @@ class TestEdiImportRouter(BaseCommon):
 
     def test_none_is_ignored(self):
         doc = self._email()
-        self._run(doc, "none")
+        self._run(doc, "none", confidence=0.99)
         self.assertEqual(doc.state, "ignored")
         self.assertFalse(doc.exchange_record_id)
+
+    def test_soft_none_needs_review(self):
+        doc = self._email()
+        self._run(doc, "none", confidence=0.93)
+        self.assertEqual(doc.state, "review")
+        self.assertIn("93%", doc.error_message)
+
+    def test_probabilities_display(self):
+        doc = self._email()
+        doc.probabilities = {str(self.html_target.id): 0.31, "none": 0.69}
+        self.assertEqual(
+            doc.probabilities_display, "None of these (ignore): 69%\nrouter_html: 31%"
+        )
+
+    def test_original_sender_from_forwarded_header(self):
+        body = (
+            "<div>FYI<br>---------- Forwarded message ---------<br>"
+            "From: <b>OPC</b> &lt;parts-counter@supplier.example&gt;<br>"
+            "Date: Mon<br>Subject: OPC Order Confirmation</div><p>Thanks</p>"
+        )
+        doc = self._email(body=body)
+        state = doc._router_typesafe_state()
+        self.assertIn("parts-counter@supplier.example", state["original from"])
+        self.assertEqual(state["from"], "a@b.c")
+        self.assertNotIn("original from", self._email(body="<p>x</p>")._router_typesafe_state())
 
     def test_low_confidence_needs_review_with_activity(self):
         self.router.responsible_user_id = self.env.user

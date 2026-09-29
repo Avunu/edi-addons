@@ -3,6 +3,7 @@
 import base64
 import io
 import logging
+import re
 
 import pypdf
 from typesafe_sdk import (
@@ -27,10 +28,18 @@ _logger = logging.getLogger(__name__)
 TEXT_LIMIT = 8000
 NONE_CHOICE = "none"
 NONE_DESCRIPTION = (
-    "Not one of the other document types, e.g. a mail-forwarding "
-    "verification email, a personal reply, marketing, a printer test page or "
-    "a blank page."
+    "Clearly not one of the other document types: Google's mail-forwarding "
+    "confirmation email, marketing or newsletters, a printer test page or a "
+    "blank page. A forwarded ('Fwd:') copy of a vendor's order, quote or "
+    "confirmation is NOT this; it is that vendor's document."
 )
+# "---------- Forwarded message ---------" (Gmail) / "-----Original Message-----"
+# (Outlook), then the original header block's From line.
+_FORWARDED_FROM_RE = re.compile(
+    r"(?:forwarded message|original message)\W*?\n(?:.*\n){0,3}?\s*from:\s*(.+)",
+    re.IGNORECASE,
+)
+_FROM_LINE_RE = re.compile(r"^\s*from:\s*(.*@.*)$", re.IGNORECASE | re.MULTILINE)
 # A retryable failure is retried this many times, then reviewed by a person.
 MAX_RETRIES = 3
 
@@ -66,6 +75,7 @@ class EdiImportRouterDocument(models.Model):
     target_id = fields.Many2one("edi.import.router.target", string="Target")
     confidence = fields.Float()
     probabilities = fields.Json()
+    probabilities_display = fields.Text(compute="_compute_probabilities_display")
     error_message = fields.Text()
     exchange_record_id = fields.Many2one("edi.exchange.record", readonly=True)
     routed_record = fields.Reference(
@@ -87,6 +97,20 @@ class EdiImportRouterDocument(models.Model):
     def _selection_routed_record(self):
         models_ = self.env["ir.model"].sudo().search([("transient", "=", False)])
         return [(m.model, m.name) for m in models_]
+
+    @api.depends("probabilities")
+    def _compute_probabilities_display(self):
+        for doc in self:
+            names = {
+                str(t.id): t.exchange_type_id.name
+                for t in doc.router_id.target_ids.with_context(active_test=False)
+            }
+            names[NONE_CHOICE] = _("None of these (ignore)")
+            ranked = sorted((doc.probabilities or {}).items(), key=lambda kv: -kv[1])
+            doc.probabilities_display = "\n".join(
+                "%s: %.0f%%" % (names.get(key, key), value * 100)
+                for key, value in ranked
+            )
 
     @api.depends("exchange_record_id.model", "exchange_record_id.res_id")
     def _compute_routed_record(self):
@@ -195,11 +219,13 @@ class EdiImportRouterDocument(models.Model):
         state = {}
         if self.source_type == "email":
             body = base64.b64decode(self.email_body or b"").decode(errors="replace")
+            text = html2plaintext(body)
             state.update(
                 {
                     "subject": self.name,
                     "from": self.email_from,
-                    "body": html2plaintext(body)[:TEXT_LIMIT],
+                    "original from": self._router_original_sender(text),
+                    "body": text[:TEXT_LIMIT],
                 }
             )
         else:
@@ -212,6 +238,18 @@ class EdiImportRouterDocument(models.Model):
             if text.strip():
                 state["pdf text"] = text
         return {k: v for k, v in state.items() if v not in (None, False, "")}
+
+    @staticmethod
+    def _router_original_sender(text):
+        """The sender of a forwarded email, read from its forwarded header.
+
+        Staff forward vendor mail by hand, so ``email_from`` is the shop's
+        own mailbox and the vendor's address appears only in the quoted
+        header block (or nowhere, when the mail client dropped it).
+        """
+        head = text[:TEXT_LIMIT]
+        match = _FORWARDED_FROM_RE.search(head) or _FROM_LINE_RE.search(head)
+        return match.group(1).strip()[:200] if match else None
 
     def _router_offered_targets(self):
         """The router's targets that accept this source and can read its file."""
@@ -294,13 +332,24 @@ class EdiImportRouterDocument(models.Model):
                 "probabilities": dict(answer.probabilities),
             }
         )
+        if answer.choice == NONE_CHOICE:
+            if answer.confidence >= router.ignore_threshold:
+                self.write({"state": "ignored", "error_message": False})
+                return self.message_post(
+                    body=_("Not a document for any of the targets.")
+                )
+            return self._router_set_review(
+                _(
+                    "TypeSafe thinks this is not one of the targets, but only "
+                    "%.0f%% sure (ignoring needs %.0f%%).",
+                    answer.confidence * 100,
+                    router.ignore_threshold * 100,
+                )
+            )
         if answer.confidence < router.confidence_threshold:
             return self._router_set_review(
                 _("TypeSafe is not confident enough (%.0f%%).", answer.confidence * 100)
             )
-        if answer.choice == NONE_CHOICE:
-            self.write({"state": "ignored", "error_message": False})
-            return self.message_post(body=_("Not a document for any of the targets."))
         target = targets.filtered(lambda t: str(t.id) == answer.choice)
         if not target:
             return self._router_set_review(

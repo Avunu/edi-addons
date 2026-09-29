@@ -18,6 +18,7 @@
                             <field name="name"/>
                             <field name="responsible_user_id"/>
                             <field name="confidence_threshold"/>
+                            <field name="ignore_threshold"/>
                         </group>
                         <group string="Ways in">
                             <label for="alias_name" string="Email address"/>

@@ -34,7 +34,9 @@
                     <group invisible="not error_message">
                         <field name="error_message"/>
                     </group>
-                    <field name="probabilities" widget="json" invisible="not probabilities" readonly="1"/>
+                    <group string="TypeSafe's answer" invisible="not probabilities_display">
+                        <field name="probabilities_display" nolabel="1" colspan="2"/>
+                    </group>
                 </sheet>
                 <chatter/>
             </form>

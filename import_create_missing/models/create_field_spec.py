@@ -116,6 +116,42 @@ _FALSY_DEFAULT_IS_REAL: Final[frozenset[str]] = frozenset(
 )
 
 
+def _is_real_default(ttype: str, present: bool, value: Any) -> bool:
+    """Whether `default_get()` genuinely offered a default.
+
+    It happily returns a falsy value for a field it has no real default
+    for, so for most types "empty" has to be read as "no default". Not for
+    the scalar types in `_FALSY_DEFAULT_IS_REAL`, where False/0/0.0 is a
+    perfectly ordinary default Odoo really will apply -
+    `product.supplierinfo.price` defaults to 0.0, and treating that as
+    missing would nag about a field the user never has to touch.
+    """
+    if not present:
+        return False
+    return ttype in _FALSY_DEFAULT_IS_REAL or bool(value)
+
+
+def fields_with_defaults(model: BaseModel, names: Collection[str]) -> frozenset[str]:
+    """Which of `names` Odoo itself would fill in on `create()`.
+
+    The cheap, arbitrary-field counterpart of `required_field_specs()`
+    (which only ever looks at required fields): a row may point its
+    `Odoo Default` type at any field at all, and offering that choice is
+    only honest when there really is a default behind it.
+    """
+    wanted = [name for name in names if name in model._fields]
+    if not wanted:
+        return frozenset()
+    defaults = model.with_context(clean_context(model.env.context)).default_get(wanted)
+    return frozenset(
+        name
+        for name in wanted
+        if _is_real_default(
+            model._fields[name].base_field.type, name in defaults, defaults.get(name)
+        )
+    )
+
+
 def _delegation_link_names(model: BaseModel) -> frozenset[str]:
     """The `_inherits` link fields on `model` (e.g. `product.product`'s
     `product_tmpl_id`). Always required, but never something a user should
@@ -198,16 +234,7 @@ def required_field_specs(
             # installed right now) - nothing a row could point at.
             continue
         default = defaults.get(name)
-        has_default = name in defaults
-        if field.type not in _FALSY_DEFAULT_IS_REAL:
-            # `default_get()` happily returns a falsy value for a field it
-            # has no real default for, so for most types "empty" has to be
-            # read as "no default". Not for the scalar types below, where
-            # False/0/0.0 is a perfectly ordinary default that Odoo really
-            # will apply - `product.supplierinfo.price` defaults to 0.0,
-            # and treating that as "missing" would nag about a field the
-            # user never has to touch.
-            has_default = has_default and bool(default)
+        has_default = _is_real_default(field.type, name in defaults, default)
         specs.append(
             CreateFieldSpec(
                 field_id=field_record.id,

@@ -49,6 +49,7 @@
                         <field name="line_id" invisible="1" />
                         <field name="candidate_model_ids" invisible="1" />
                         <field name="has_missing_required" invisible="1" />
+                        <field name="has_odoo_default" invisible="1" />
                         <field name="fixed_value_kind" invisible="1" />
                         <field
                             name="field_id"
@@ -108,10 +109,22 @@
                     </group>
                     <div
                         class="text-muted"
-                        invisible="value_type != 'odoo_default'"
+                        invisible="value_type != 'odoo_default' or not has_odoo_default"
                     >
                         This field is left out of the new document entirely, so
                         Odoo applies its own default when the document is created.
+                    </div>
+                    <!-- The one combination that silently guarantees a failed
+                         create: deferring to a default that does not exist. -->
+                    <div
+                        class="alert alert-danger"
+                        role="alert"
+                        invisible="value_type != 'odoo_default' or has_odoo_default"
+                    >
+                        Odoo has no default for this field, so leaving it on
+                        <b>Odoo Default</b> means it will not be set at all - and
+                        the document will not be created. Choose Fixed or Variable
+                        instead.
                     </div>
                     <notebook invisible="field_ttype != 'one2many'">
                         <page string="Row Values" name="page_child_value_ids">

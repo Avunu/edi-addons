@@ -12,6 +12,7 @@ from odoo import api, fields, models
 from .create_field_spec import (
     FIXED_VALUE_FIELD,
     CreateFieldSpec,
+    fields_with_defaults,
     fixed_value_kind,
     required_field_names,
     required_field_specs,
@@ -171,6 +172,13 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         help="Whether the document being created genuinely requires this "
         "field - i.e. `create()` would reject the record without it.",
     )
+    has_odoo_default = fields.Boolean(
+        compute="_compute_has_odoo_default",
+        string="Odoo has a default",
+        help="Whether Odoo itself would fill this field in on create(). "
+        "`Odoo Default` only means anything when this is set - otherwise "
+        "the field is simply left unset and the document is rejected.",
+    )
     has_missing_required = fields.Boolean(
         compute="_compute_has_missing_required",
         string="Missing",
@@ -297,6 +305,23 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 )
             rec.is_required = rec.field_name in names_by_model[key]
 
+    @api.depends("model", "field_name")
+    def _compute_has_odoo_default(self):
+        by_model: dict[str, list] = {}
+        for rec in self:
+            by_model.setdefault(rec.model or "", []).append(rec)
+        for model_name, recs in by_model.items():
+            if not model_name or model_name not in self.env:
+                for rec in recs:
+                    rec.has_odoo_default = False
+                continue
+            defaulted = fields_with_defaults(
+                self.env[model_name],
+                [rec.field_name for rec in recs if rec.field_name],
+            )
+            for rec in recs:
+                rec.has_odoo_default = rec.field_name in defaulted
+
     @api.model
     def _value_depends(self) -> tuple[str, ...]:
         """Every field that can change what a row actually contributes -
@@ -310,6 +335,7 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             "field_ttype",
             "value_type",
             "child_value_ids",
+            "has_odoo_default",
             *FIXED_VALUE_FIELD.values(),
             *self._variable_source_fields(),
         )
@@ -331,7 +357,11 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         document being created - the test behind `has_missing_required`."""
         self.ensure_one()
         if self.value_type == "odoo_default":
-            return True
+            # Only a real default counts. Deferring to one that does not
+            # exist leaves the field unset and the document rejected, so
+            # it is the opposite of "handled" - and must not silence the
+            # warning that says so.
+            return self.has_odoo_default
         if self.field_ttype == "one2many":
             return bool(self.child_value_ids)
         if self.value_type == "fixed":
@@ -558,7 +588,11 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         if not self.field_id:
             return False
         if self.value_type == "odoo_default":
-            return self.env._("Odoo default")
+            return (
+                self.env._("Odoo default")
+                if self.has_odoo_default
+                else self.env._("⚠ Odoo has no default for this field.")
+            )
         if self.field_ttype == "one2many":
             return self.env._("%s row template(s)", len(self.child_value_ids))
         if self.value_type == "fixed":

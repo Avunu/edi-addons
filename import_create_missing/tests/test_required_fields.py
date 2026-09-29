@@ -174,6 +174,15 @@ class TestRequiredCreateValues(BaseCommon):
         self._rows()["login"].write({"pattern": r"Login: (.+)\n"})
         self.assertFalse(self.name_line.create_missing_warning)
 
+    def test_odoo_default_on_a_field_without_one_is_still_missing(self):
+        self.name_line.action_add_required_create_values()
+        login_row = self._rows()["login"]
+        # `login` is required and Odoo has no default for it.
+        login_row.value_type = "odoo_default"
+        self.assertFalse(login_row.has_odoo_default)
+        self.assertTrue(login_row.has_missing_required)
+        self.assertIn("Login", self.name_line.create_missing_warning)
+
     def test_has_missing_required_per_row(self):
         self.name_line.action_add_required_create_values()
         rows = self._rows()
@@ -302,13 +311,25 @@ class TestTypedFixedValues(BaseCommon):
         self.assertIsNone(row._fixed_create_value())
 
     def test_odoo_default_contributes_nothing(self):
-        row = self._row("base.field_res_partner__ref", fixed_value="ABC")
+        # `res.partner.type` really does default (to 'contact').
+        row = self._row("base.field_res_partner__type")
         row.value_type = "odoo_default"
+        self.assertTrue(row.has_odoo_default)
         # Leaving the key out IS how Odoo's own default gets applied.
         self.assertIsNone(row._to_create_value(None))
         # ...and it counts as handled, not as a missing value.
         self.assertTrue(row._has_value())
         self.assertEqual(row.value_summary, "Odoo default")
+
+    def test_odoo_default_without_a_default_is_not_a_value(self):
+        """The one combination that silently guarantees a failed create:
+        deferring to a default Odoo does not have. It must NOT count as
+        handled, or it would suppress the very warning that says so."""
+        row = self._row("base.field_res_partner__ref")
+        row.value_type = "odoo_default"
+        self.assertFalse(row.has_odoo_default)
+        self.assertFalse(row._has_value())
+        self.assertIn("no default", row.value_summary)
 
     def test_legacy_fixed_values_are_migrated(self):
         boolean_row = self._row(

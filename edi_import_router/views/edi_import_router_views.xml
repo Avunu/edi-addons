@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="edi_import_router_view_form" model="ir.ui.view">
+        <field name="name">edi.import.router.form</field>
+        <field name="model">edi.import.router</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_documents" type="object" class="oe_stat_button" icon="fa-files-o">
+                            <field name="document_count" widget="statinfo" string="Documents"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <group>
+                        <group string="Router">
+                            <field name="name"/>
+                            <field name="responsible_user_id"/>
+                            <field name="confidence_threshold"/>
+                        </group>
+                        <group string="Ways in">
+                            <label for="alias_name" string="Email address"/>
+                            <div class="d-flex" name="alias_def">
+                                <field name="alias_name" placeholder="orders" class="oe_inline"/>
+                                <span class="oe_inline">@</span>
+                                <field name="alias_domain_id" class="oe_inline" options="{'no_create': True, 'no_open': True}"/>
+                            </div>
+                            <field name="printer_setup" readonly="1" invisible="not printer_setup"
+                                   help="Set these on the ERP Printer profile to send printed PDFs to this router."/>
+                        </group>
+                    </group>
+                    <group string="Question">
+                        <field name="instructions" nolabel="1" colspan="2"/>
+                    </group>
+                    <field name="target_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="exchange_type_id"/>
+                            <field name="backend_type_id" column_invisible="1"/>
+                            <field name="backend_id"/>
+                            <field name="source_type"/>
+                            <field name="description"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="edi_import_router_view_list" model="ir.ui.view">
+        <field name="name">edi.import.router.list</field>
+        <field name="model">edi.import.router</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="alias_id"/>
+                <field name="responsible_user_id"/>
+                <field name="document_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="edi_import_router_action" model="ir.actions.act_window">
+        <field name="name">Import Routers</field>
+        <field name="res_model">edi.import.router</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

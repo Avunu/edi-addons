@@ -5,7 +5,7 @@
     "summary": "Create the linked document on the fly when a "
     "base_import_pdf_by_template line's search misses, filling it from "
     "fixed values or the same pattern matching the line itself uses.",
-    "version": "18.0.1.1.0",
+    "version": "18.0.1.2.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://avu.nu",

@@ -124,3 +124,49 @@ class TestJsonpathValues(BaseCommon):
         pine = self.env["res.partner.industry"].search([("name", "=", "Pine")])
         self.assertTrue(pine)
         self.assertFalse(pine.full_name)
+
+    def test_summary_shows_jsonpath_and_pattern(self):
+        """Both sources, not just the first: showing only the Pattern once
+        made a correctly configured row look like it had no JSONPath."""
+        create_value = self._make_create_value(
+            xberg_jsonpath="$.tables[0].cellsByHeader[*].Description",
+            pattern=r"^(\w+)",
+        )
+        self.assertIn("Pattern", create_value.value_summary)
+        self.assertIn("JSONPath", create_value.value_summary)
+
+    def test_warning_names_a_pattern_without_jsonpath(self):
+        self._make_create_value(pattern=r"^(\w+)")
+        self.assertIn("No JSONPath", self.line.create_missing_warning)
+
+    def test_no_warning_when_the_row_has_its_own_jsonpath(self):
+        self._make_create_value(
+            xberg_jsonpath="$.tables[0].cellsByHeader[*].Description",
+            pattern=r"^(\w+)",
+        )
+        self.assertFalse(
+            "No JSONPath" in (self.line.create_missing_warning or "")
+        )
+
+    def test_warning_names_a_nested_row_with_its_parent(self):
+        bank_row = self.env["base.import.pdf.template.line.create.value"].create(
+            {
+                "line_id": self.line.id,
+                "field_id": self.env.ref("base.field_res_partner__bank_ids").id,
+                "value_type": "variable",
+            }
+        )
+        self.env["base.import.pdf.template.line.create.value"].create(
+            {
+                "line_id": self.line.id,
+                "parent_id": bank_row.id,
+                "field_id": self.env.ref(
+                    "base.field_res_partner_bank__acc_number"
+                ).id,
+                "value_type": "variable",
+                "pattern": r"(\d+)",
+            }
+        )
+        warning = self.line.create_missing_warning or ""
+        self.assertIn("No JSONPath", warning)
+        self.assertIn("›", warning)

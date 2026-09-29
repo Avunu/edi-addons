@@ -38,53 +38,78 @@ class BaseImportPdfTemplate(models.Model):
         create_missing_lines = self._create_missing_lines()
         if not res or not create_missing_lines:
             return res
-        row_count = len(res["data"])
+        table_rows = len(res["data"])
         by_line = {}
         for line in create_missing_lines:
-            by_line[line.id] = self._extract_create_missing_columns(line, text, row_count)
+            # Aligned against the line's OWN column, not the whole table:
+            # the table is `zip_longest` over every "lines" line, so one
+            # longer column elsewhere (a Unit Price that also matched a
+            # loyalty price) would otherwise make every New Document Values
+            # column look misaligned and silently block all creation.
+            own_rows = len(line._get_column_values(text))
+            by_line[line.id] = self._extract_create_missing_columns(
+                line, text, own_rows, table_rows
+            )
         res["create_missing"] = by_line
         res[CREATE_MISSING_TEXT_KEY] = text
         return res
 
-    def _extract_create_missing_columns(self, line, text, row_count):
-        """This line's `create_value_ids` columns, keyed by
-        `create_value.id`, each padded/rejected against `row_count` (the
-        number of rows the line's OWN column produced). A column whose
-        length doesn't match `row_count` is set to `False` for every row
+    def _create_missing_column_rows(self, line):
+        """The rows whose values `_extract_create_missing_columns()` must
+        extract as table-aligned columns: this line's own Variable rows,
+        plus - on a `lines` line - the Variable Row Values of each
+        top-level one2many row, so each product's vendor row is built from
+        its OWN table row (see
+        `create.value._one2many_create_value()`)."""
+        rows = self.env["base.import.pdf.template.line.create.value"]
+        for create_value in line._top_level_create_values():
+            if create_value.field_ttype == "one2many":
+                if create_value._pairs_one2many_by_row():
+                    rows |= create_value.child_value_ids
+                continue
+            rows |= create_value
+        return rows.filtered(
+            lambda row: row.field_name
+            and row.value_type == "variable"
+            and row.field_ttype != "one2many"
+            and row._has_variable_source()
+        )
+
+    def _extract_create_missing_columns(self, line, text, row_count, table_rows=None):
+        """This line's New Document Values columns, keyed by create-value
+        id, each checked against `row_count` - the number of rows the
+        line's OWN column produced - then padded with "" to `table_rows`
+        (the whole table's length), since the caller reads one value per
+        table row. Padded rows are past the end of this line's own column:
+        their own cell is empty, so the search never runs and nothing is
+        created for them.
+
+        A column whose length doesn't match `row_count` is set to `None`
         rather than zipped in ragged - see the module README for why: a
         positional mismatch would silently pair a New Document Value with
-        the wrong row instead of just producing no document, which is
-        worse than not creating one at all.
+        the wrong row instead of just producing no document, which is worse
+        than not creating one at all. Why is logged where it can be found.
         """
+        table_rows = max(table_rows or 0, row_count)
         columns = {}
-        for create_value in line._top_level_create_values():
-            if not create_value.field_name or create_value.value_type != "variable":
-                continue
-            if create_value.field_ttype == "one2many":
-                # A one2many's own rows are extracted fresh from the whole
-                # document at creation time (see
-                # `create.value._extract_one2many_commands()`), not tied
-                # to this line's row position - it never participates in
-                # this per-row column alignment at all.
-                continue
-            if not create_value._has_variable_source():
-                continue
+        for create_value in self._create_missing_column_rows(line):
             values = create_value._extract_column(text)
             if len(values) != row_count:
-                _logger.warning(
-                    "Line %s: New Document Values row %s (%s) extracted "
-                    "%s value(s) but the line itself has %s row(s) - "
-                    "skipping document creation for every row of this "
-                    "line.",
-                    line.id,
-                    create_value.id,
-                    create_value.field_name,
-                    len(values),
-                    row_count,
+                label = (
+                    f"{create_value.parent_id.field_id.field_description} › "
+                    if create_value.parent_id
+                    else ""
+                ) + (create_value.field_id.field_description or create_value.field_name)
+                line._log_create_missing(
+                    f"Line {line.id}: New Document Values row {create_value.id} "
+                    f"({label}) extracted {len(values)} value(s) but the line "
+                    f"itself has {row_count} row(s) - skipping document "
+                    f"creation for every row of this line.",
+                    "_extract_create_missing_columns",
                 )
                 columns[create_value.id] = None
             else:
-                columns[create_value.id] = values
+                columns[create_value.id] = values + [""] * (table_rows - len(values))
         return columns
 
     def _get_field_child_values(self, table_info):

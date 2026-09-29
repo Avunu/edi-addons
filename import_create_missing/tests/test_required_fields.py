@@ -130,6 +130,10 @@ class TestRequiredCreateValues(BaseCommon):
         self.assertEqual(rows["company_id"].fixed_value_kind, "record")
         # The `_inherits` link is never offered.
         self.assertNotIn("partner_id", rows)
+        # Vendors is only ever offered for a product.
+        self.assertFalse(
+            [row for row in rows.values() if row.field_ttype == "one2many"]
+        )
 
     def test_search_field_is_not_offered(self):
         # `self.line` searches by login, which `_prepare_create_missing_vals()`
@@ -417,3 +421,89 @@ class TestProductRequiredFields(BaseCommon):
         self.assertTrue(specs["min_qty"].has_default)
         # ...while a required many2one with no default still is missing.
         self.assertFalse(specs["partner_id"].has_default)
+
+
+@tagged(*_TAGS)
+class TestVendorsAlwaysOffered(BaseCommon):
+    """A product created on the fly always gets a Vendors row, although
+    nothing makes `seller_ids` required: a product without a vendor row is
+    one no later import can find by vendor code, so each such import would
+    create another duplicate."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if "product.supplierinfo" not in cls.env:
+            return
+        cls.template = cls.env["base.import.pdf.template"].create(
+            {
+                "name": "Vendors Offered Test Template",
+                "model_id": cls.env.ref("product.model_product_template").id,
+                "child_field_id": cls.env.ref(
+                    "product.field_product_template__seller_ids"
+                ).id,
+            }
+        )
+        cls.line = cls.env["base.import.pdf.template.line"].create(
+            {
+                "template_id": cls.template.id,
+                "related_model": "lines",
+                "field_id": cls.env.ref(
+                    "product.field_product_supplierinfo__product_id"
+                ).id,
+                "search_field_id": cls.env.ref(
+                    "product.field_product_product__default_code"
+                ).id,
+                "create_missing": True,
+                "pattern": r"Item: (\w+)",
+            }
+        )
+
+    def setUp(self):
+        super().setUp()
+        if "product.supplierinfo" not in self.env:
+            self.skipTest("product is not installed")
+
+    def _row(self, field_name):
+        return self.line.create_value_ids.filtered(
+            lambda row: row.field_name == field_name
+        )
+
+    def test_vendors_row_is_added_with_its_required_vendor(self):
+        self.line.action_add_required_create_values()
+        vendors = self._row("seller_ids")
+        self.assertTrue(vendors)
+        self.assertFalse(vendors.is_required)
+        children = {child.field_name: child for child in vendors.child_value_ids}
+        # The vendor itself: required, no default, so the user must say.
+        self.assertIn("partner_id", children)
+        self.assertEqual(children["partner_id"].value_type, "variable")
+        self.assertTrue(children["partner_id"].has_missing_required)
+        # The inverse is set by the one2many command itself.
+        self.assertNotIn("product_tmpl_id", children)
+        # Nested rows stay nested - not in the top-level table.
+        self.assertFalse(
+            self.line.create_value_ids & vendors.child_value_ids
+        )
+        self.assertIn("Vendor", self.line.create_missing_warning)
+
+    def test_button_restores_deleted_vendor_and_leaves_rows_alone(self):
+        self.line.action_add_required_create_values()
+        name_row = self._row("name")
+        name_row.write({"pattern": r"Desc: (.+)"})
+        vendors = self._row("seller_ids")
+        vendors.child_value_ids.filtered(
+            lambda child: child.field_name == "partner_id"
+        ).unlink()
+        self.line.action_add_required_create_values()
+        self.assertIn("partner_id", vendors.child_value_ids.mapped("field_name"))
+        self.assertEqual(self._row("name").pattern, r"Desc: (.+)")
+        self.assertEqual(len(self._row("seller_ids")), 1)
+
+    def test_button_restores_a_deleted_vendors_row(self):
+        self.line.action_add_required_create_values()
+        self._row("seller_ids").unlink()
+        self.line.action_add_required_create_values()
+        vendors = self._row("seller_ids")
+        self.assertTrue(vendors)
+        self.assertIn("partner_id", vendors.child_value_ids.mapped("field_name"))

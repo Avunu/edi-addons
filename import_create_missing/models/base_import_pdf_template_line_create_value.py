@@ -198,16 +198,22 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Let a nested row inherit its parent's `line_id`.
+        """A nested row always belongs to its parent's line.
 
         `line_id` is required on every row, nested or not (see its help),
-        but the Row Values table auto-populated by
-        `_onchange_field_id_children()` is built before the outer row
-        exists - there is no `default_line_id` for the client to hand the
-        nested rows, and on an unsaved line there is no id to hand either.
+        but nothing reliable hands a nested row the right one:
+        - the Row Values table auto-populated by
+          `_onchange_field_id_children()`/`_one2many_row_vals()` is built
+          before the outer row exists, so there is no `default_line_id` to
+          hand it, and on an unsaved line no id either;
+        - copying a line copies its rows, and each row's children with it -
+          but the copied children arrive carrying the ORIGINAL line's id,
+          which a merely-fill-if-missing rule would keep.
+        Taking it from the parent every time makes the invariant hold by
+        construction instead of by every caller remembering it.
         """
         for vals in vals_list:
-            if not vals.get("line_id") and vals.get("parent_id"):
+            if vals.get("parent_id"):
                 vals["line_id"] = self.browse(vals["parent_id"]).line_id.id
         return super().create(vals_list)
 
@@ -540,6 +546,55 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             vals_list.append(self._row_vals_from_spec(spec, sequence))
         return vals_list
 
+    @api.model
+    def _one2many_row_vals(
+        self, model_name: str, field_name: str, sequence: int = 10
+    ) -> dict[str, Any] | None:
+        """Create-vals for a top-level row on `model_name`'s one2many
+        `field_name`, its Row Values already holding the comodel's required
+        fields - the same shape `_onchange_field_id_children()` produces
+        when a user picks the one2many by hand. `None` when `field_name`
+        isn't a one2many that a row can point at."""
+        if not model_name or model_name not in self.env:
+            return None
+        field = self.env[model_name]._fields.get(field_name)
+        if field is None or field.type != "one2many":
+            return None
+        # Point at the DEFINING model's field record (`seller_ids` is
+        # product.template's, even when the document is a product.product),
+        # the one `field_id`'s domain (`candidate_model_ids`) accepts.
+        base = field.base_field
+        field_record = self.env["ir.model.fields"]._get(base.model_name, base.name)
+        if not field_record:
+            return None
+        inverse = base.inverse_name
+        children = self._required_rows_vals(
+            base.comodel_name, exclude=(inverse,) if inverse else ()
+        )
+        return {
+            "field_id": field_record.id,
+            "value_type": "variable",
+            "sequence": sequence,
+            "child_value_ids": [fields.Command.create(vals) for vals in children],
+        }
+
+    def _missing_child_vals(self) -> list[dict[str, Any]]:
+        """Create-vals for the required Row Values this one2many row doesn't
+        have yet - what Add Required Fields appends inside a Vendors row
+        whose Vendor was deleted. Empty for any other kind of row."""
+        self.ensure_one()
+        if self.field_ttype != "one2many":
+            return []
+        if not self.field_relation or self.field_relation not in self.env:
+            return []
+        inverse = self.field_id.sudo().relation_field
+        return self._required_rows_vals(
+            self.field_relation,
+            existing=[c.field_name for c in self.child_value_ids if c.field_name],
+            exclude=(inverse,) if inverse else (),
+            start_sequence=max(self.child_value_ids.mapped("sequence"), default=0),
+        )
+
     @api.onchange("field_id")
     def _onchange_field_id_children(self):
         """Pre-fill a one2many row's Row Values with its comodel's own
@@ -597,15 +652,19 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             return self.env._("%s row template(s)", len(self.child_value_ids))
         if self.value_type == "fixed":
             return self._fixed_value_display() or self.env._("⚠ No value set.")
-        for name in self._variable_source_fields():
-            value = self[name]
-            if value:
-                return self.env._(
-                    "%(label)s: %(value)s",
-                    label=self._fields[name].string,
-                    value=value,
-                )
-        return self.env._("⚠ No pattern/JSONPath set.")
+        # EVERY source that is set, not just the first: showing only the
+        # Pattern of a row that also had a JSONPath once made a correctly
+        # configured row look like it was missing one.
+        sources = [
+            self.env._(
+                "%(label)s: %(value)s",
+                label=self._fields[name].string,
+                value=self[name],
+            )
+            for name in self._variable_source_fields()
+            if self[name]
+        ]
+        return " · ".join(sources) or self.env._("⚠ No pattern/JSONPath set.")
 
     @api.depends(lambda self: self._value_depends())
     def _compute_value_summary(self):
@@ -661,18 +720,16 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         values = self._extract_column(text)
         return values[0] if values else False
 
-    def _to_create_value(self, raw, text=None):
+    def _to_create_value(self, raw, text=None, row=None):
         """Convert one raw extracted value (or, for a `fixed` row,
         `raw` is ignored) into the value to put in the new document's
         create-vals for `field_name`. Returns `None` when there is
         nothing usable - the caller skips the key entirely rather than
         writing an empty/false value over a default.
 
-        `text` (the whole extracted document) is only used for a
-        `one2many` row - see `_extract_one2many_commands()` - and is
-        `None` whenever the caller doesn't have it (a preview render
-        never reaches this method at all, so in practice this is only
-        `None` if a future caller adds one without threading it through).
+        `text` (the whole extracted document) and `row` (this document's
+        own row of extracted values, keyed by create-value id) are only
+        used for a `one2many` row - see `_one2many_create_value()`.
         """
         self.ensure_one()
         if self.value_type == "odoo_default":
@@ -680,8 +737,7 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             # own default gets applied.
             return None
         if self.field_ttype == "one2many":
-            commands = self._extract_one2many_commands(text)
-            return commands or None
+            return self._one2many_create_value(text, row) or None
         if self.value_type == "fixed":
             return self._fixed_create_value()
         if not raw:
@@ -701,18 +757,67 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
             return value.id if value else None
         return value if value not in (False, None) else None
 
+    def _pairs_one2many_by_row(self) -> bool:
+        """Whether this one2many row's Row Values come from the SAME table
+        row as the document being created, rather than from the whole
+        document.
+
+        Decided by the line, never by what a given row's values happen to
+        contain: a Vendors row made only of Fixed children carries no
+        per-row values at all, yet on a `lines` line it must still make
+        exactly one vendor per product. Only a top-level row qualifies - a
+        one2many nested inside another one2many has no table row of its own
+        to be paired with.
+        """
+        self.ensure_one()
+        return not self.parent_id and self.line_id.related_model == "lines"
+
+    def _one2many_create_value(self, text, row) -> list:
+        """Create commands for this one2many row.
+
+        On a `lines` line, exactly ONE sub-record per table row, built from
+        that row's own values: product B's vendor row carries B's vendor
+        code, not every code on the order. Before this, every product on a
+        multi-item order got one vendor row per item - and since a later
+        import looks products up by vendor code, part B could then resolve
+        to product A.
+
+        On a `header` line there is only one row to begin with, so the Row
+        Values search the whole document instead and may make several
+        sub-records (e.g. a vendor's several bank accounts) - see
+        `_extract_one2many_commands()`.
+        """
+        self.ensure_one()
+        if not self._pairs_one2many_by_row() or row is None:
+            return self._extract_one2many_commands(text)
+        vals = {}
+        for child in self.child_value_ids.sorted("sequence"):
+            if not child.field_name:
+                continue
+            # A Variable child's value was extracted per table row by
+            # `base.import.pdf.template._extract_create_missing_columns()`;
+            # anything else (Fixed, Odoo Default, a deeper one2many)
+            # resolves without one.
+            child_raw = (
+                row.get(child.id)
+                if child.value_type == "variable" and child.field_ttype != "one2many"
+                else None
+            )
+            value = child._to_create_value(child_raw, text=text)
+            if value is not None:
+                vals[child.field_name] = value
+        return [(0, 0, vals)] if vals else []
+
     def _extract_one2many_commands(self, text):
         """`(0, 0, vals)` create commands for this row's one2many field,
-        one per row of `child_value_ids` - unlike every other field on
-        this line, a one2many's own rows are extracted fresh from the
-        WHOLE document (`text`), not tied to this line's own row
-        position: there is no general way to address "the vendors that
-        belong to THIS row" within a flat/table document without a
-        per-row-relative pattern language this module doesn't have -
-        see the README's "Nested one2many fields" section. Every
-        `child_value_ids` row's `Variable` extraction is instead paired
-        by MATCH POSITION across the whole document: the 3rd vendor
-        name goes with the 3rd vendor price, and so on.
+        extracted fresh from the WHOLE document (`text`) - the `header`
+        line case (and a one2many nested inside another), where there is no
+        table row to pair with; a top-level one2many on a `lines` line goes
+        through `_one2many_create_value()`'s per-row path instead. Every
+        `child_value_ids` row's `Variable` extraction is paired by MATCH
+        POSITION across the whole document: the 3rd bank account number
+        goes with the 3rd bank name, and so on - see the README's "Nested
+        one2many fields" section.
 
         Returns `[]` (not `None`) when there is nothing to create -
         callers treat both the same way (skip the key), but zero

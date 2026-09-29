@@ -26,6 +26,12 @@ class TestCreateMissing(BaseCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # `_log_create_missing()` writes on its OWN cursor, so a log entry
+        # survives a failed import's rollback. Test mode turns that cursor
+        # into one on this test's transaction, so the entries can be
+        # asserted on here and are rolled back with everything else.
+        cls.registry.enter_test_mode(cls.cr)
+        cls.addClassCleanup(cls.registry.leave_test_mode)
         cls.Template = cls.env["base.import.pdf.template"]
         cls.Line = cls.env["base.import.pdf.template.line"]
         cls.CreateValue = cls.env["base.import.pdf.template.line.create.value"]
@@ -131,7 +137,7 @@ class TestCreateMissing(BaseCommon):
         )
         text = "Row: Papermaking, x\nRow: Bookbinding, y\nONLY-ONE: solo\n"
         with self.assertLogs(
-            "odoo.addons.import_create_missing.models.base_import_pdf_template",
+            "odoo.addons.import_create_missing.models.base_import_pdf_template_line",
             level="WARNING",
         ):
             table_info = self.template.with_context(
@@ -142,6 +148,49 @@ class TestCreateMissing(BaseCommon):
             )._get_field_child_values(table_info)
         self.assertFalse(self.Industry.search([("name", "=", "Papermaking")]))
         self.assertFalse(self.Industry.search([("name", "=", "Bookbinding")]))
+        # ...and says why, where it can be found (Settings > Technical >
+        # Logging) - not only in a server log nobody may be able to read.
+        self.assertTrue(self._logged("skipping document creation"))
+
+    def _logged(self, fragment):
+        return self.env["ir.logging"].search(
+            [("path", "=", "import_create_missing"), ("message", "ilike", fragment)]
+        )
+
+    def test_longer_other_column_does_not_block_creation(self):
+        """Alignment is checked against the line's OWN column, not the
+        whole table. The table is `zip_longest` over every "lines" line, so
+        one longer column elsewhere used to make every New Document Values
+        column look misaligned - and silently blocked all creation."""
+        line = self._make_line(pattern=r"Row: (\w+),")
+        self.CreateValue.create(
+            {
+                "line_id": line.id,
+                "field_id": self.industry_full_name_field.id,
+                "value_type": "variable",
+                "pattern": r", (\w+)$",
+            }
+        )
+        # A second "lines" line whose column is longer than the first's.
+        self.Line.create(
+            {
+                "template_id": self.template.id,
+                "related_model": "lines",
+                "field_id": self.env.ref("base.field_res_partner__ref").id,
+                "pattern": r"^(Ref \w)$",
+            }
+        )
+        text = "Row: Weaving, WeavingFull\nRef A\nRef B\n"
+        table_info = self.template.with_context(
+            import_create_missing=True
+        )._get_table_info(text)
+        self.assertEqual(len(table_info["data"]), 2)
+        self.template.with_context(
+            import_create_missing=True
+        )._get_field_child_values(table_info)
+        industry = self.Industry.search([("name", "=", "Weaving")])
+        self.assertTrue(industry)
+        self.assertEqual(industry.full_name, "WeavingFull")
 
     def test_no_creation_outside_a_real_import(self):
         line = self._make_line(pattern=r"Row: (\w+)\n")
@@ -207,3 +256,6 @@ class TestCreateMissing(BaseCommon):
             )._get_record_search_from_value("Papercraft")
         self.assertFalse(record)
         self.assertFalse(self.Industry.search([("name", "=", "Papercraft")]))
+        # The reason reaches Settings > Technical > Logging, with the error.
+        self.assertTrue(self._logged("failed to create a missing"))
+        self.assertTrue(self._logged("boom"))

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_edi_import_router_root" name="Import Routing"
+              parent="base_edi.menu_edi_root" sequence="90"/>
+    <menuitem id="menu_edi_import_router_document" name="Routed Documents"
+              parent="menu_edi_import_router_root" sequence="10"
+              action="edi_import_router_document_action"
+              groups="group_import_router_reviewer,base.group_system"/>
+    <menuitem id="menu_edi_import_router" name="Import Routers"
+              parent="menu_edi_import_router_root" sequence="20"
+              action="edi_import_router_action" groups="base.group_system"/>
+</odoo>

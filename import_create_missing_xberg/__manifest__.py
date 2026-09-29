@@ -5,7 +5,7 @@
     "summary": "JSONPath narrowing (import_via_xberg) for "
     "import_create_missing's New Document Values, on templates using the "
     "xberg extraction mode.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://avu.nu",

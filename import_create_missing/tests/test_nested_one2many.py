@@ -179,3 +179,148 @@ class TestNestedOneToMany(BaseCommon):
             self.env.ref("base.model_res_users").id,
             create_value.candidate_model_ids.ids,
         )
+
+
+@tagged(*_TAGS)
+class TestNestedOneToManyPerRow(BaseCommon):
+    """A one2many row on a `lines` line: each document gets exactly ONE
+    sub-record, built from its OWN table row - never every row's values.
+
+    The case this exists for: a multi-item order where each created product
+    gets a vendor row carrying its own vendor code. Reading the Row Values
+    from the whole document instead gave every product every item's code,
+    so a later import looking part B up by vendor code could land on
+    product A.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.registry.enter_test_mode(cls.cr)
+        cls.addClassCleanup(cls.registry.leave_test_mode)
+        cls.Template = cls.env["base.import.pdf.template"]
+        cls.Line = cls.env["base.import.pdf.template.line"]
+        cls.CreateValue = cls.env["base.import.pdf.template.line.create.value"]
+        cls.template = cls.Template.create(
+            {
+                "name": "Nested O2M Per-Row Test Template",
+                "model_id": cls.env.ref("base.model_res_partner").id,
+                "child_field_id": cls.env.ref(
+                    "base.field_res_partner__child_ids"
+                ).id,
+            }
+        )
+        # One row per contact; each contact's missing PARENT company is
+        # created with its own bank account - the same shape as one vendor
+        # row per product.
+        cls.line = cls.Line.create(
+            {
+                "template_id": cls.template.id,
+                "related_model": "lines",
+                "field_id": cls.env.ref("base.field_res_partner__parent_id").id,
+                "search_field_id": cls.env.ref("base.field_res_partner__name").id,
+                "create_missing": True,
+                "pattern": r"Row: (\w+),",
+            }
+        )
+        cls.bank_row = cls.CreateValue.create(
+            {
+                "line_id": cls.line.id,
+                "field_id": cls.env.ref("base.field_res_partner__bank_ids").id,
+                "value_type": "variable",
+            }
+        )
+        cls.acc_number_field = cls.env.ref("base.field_res_partner_bank__acc_number")
+
+    def _import(self, text):
+        template = self.template.with_context(import_create_missing=True)
+        template._get_field_child_values(template._get_table_info(text))
+
+    def _partner(self, name):
+        return self.env["res.partner"].search([("name", "=", name)])
+
+    def test_each_row_gets_only_its_own_sub_record(self):
+        self.CreateValue.create(
+            {
+                "line_id": self.line.id,
+                "parent_id": self.bank_row.id,
+                "field_id": self.acc_number_field.id,
+                "value_type": "variable",
+                "pattern": r", (\d+)$",
+            }
+        )
+        self._import("Row: Acme, 111\nRow: Beta, 222\n")
+        acme, beta = self._partner("Acme"), self._partner("Beta")
+        self.assertTrue(acme and beta)
+        self.assertEqual(acme.bank_ids.mapped("acc_number"), ["111"])
+        self.assertEqual(beta.bank_ids.mapped("acc_number"), ["222"])
+
+    def test_fixed_only_children_make_one_sub_record_per_row(self):
+        self.CreateValue.create(
+            {
+                "line_id": self.line.id,
+                "parent_id": self.bank_row.id,
+                "field_id": self.acc_number_field.id,
+                "value_type": "fixed",
+                "fixed_value": "000-FIXED",
+            }
+        )
+        self._import("Row: Gamma, x\nRow: Delta, y\n")
+        for name in ("Gamma", "Delta"):
+            self.assertEqual(
+                self._partner(name).bank_ids.mapped("acc_number"), ["000-FIXED"]
+            )
+
+    def test_misaligned_child_column_skips_the_line(self):
+        self.CreateValue.create(
+            {
+                "line_id": self.line.id,
+                "parent_id": self.bank_row.id,
+                "field_id": self.acc_number_field.id,
+                "value_type": "variable",
+                # One match against a two-row document.
+                "pattern": r"^ONLY-ONE: (\d+)$",
+            }
+        )
+        self._import("Row: Epsilon, x\nRow: Zeta, y\nONLY-ONE: 9\n")
+        self.assertFalse(self._partner("Epsilon"))
+        self.assertFalse(self._partner("Zeta"))
+        logged = self.env["ir.logging"].search(
+            [("path", "=", "import_create_missing"), ("message", "ilike", "skipping")]
+        )
+        # Named with its parent, so it can be found in the Row Values.
+        self.assertTrue(logged.filtered(lambda log: "›" in log.message))
+
+    def test_top_level_table_excludes_nested_rows(self):
+        child = self.CreateValue.create(
+            {
+                "line_id": self.line.id,
+                "parent_id": self.bank_row.id,
+                "field_id": self.acc_number_field.id,
+                "value_type": "fixed",
+                "fixed_value": "1",
+            }
+        )
+        self.assertIn(self.bank_row, self.line.create_value_ids)
+        self.assertNotIn(child, self.line.create_value_ids)
+        self.assertIn(child, self.bank_row.child_value_ids)
+
+    def test_copied_line_owns_its_copied_nested_rows(self):
+        self.CreateValue.create(
+            {
+                "line_id": self.line.id,
+                "parent_id": self.bank_row.id,
+                "field_id": self.acc_number_field.id,
+                "value_type": "fixed",
+                "fixed_value": "1",
+            }
+        )
+        copy = self.line.copy()
+        copied_bank_row = copy.create_value_ids.filtered(
+            lambda row: row.field_name == "bank_ids"
+        )
+        self.assertTrue(copied_bank_row.child_value_ids)
+        # Not the original line - a copy that kept pointing there would
+        # vanish with, and be edited through, the wrong line.
+        self.assertEqual(copied_bank_row.child_value_ids.line_id, copy)
+        self.assertEqual(len(self.line.create_value_ids), 1)

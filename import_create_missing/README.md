@@ -45,11 +45,25 @@ The warning is **advisory only**: the line saves, the dialog closes, and you can
 
 ### Nested one2many fields
 
-If **Field** is a one2many (e.g. a newly-created vendor's own `bank_ids`, or a product's `seller_ids`), the row's Type/Value/Pattern disappear and a **Row Values** table takes their place - the exact same list-opens-a-form widget, one row per field of the one2many's own model (e.g. a bank account's `acc_number`), each with its own Type/Value/Pattern. Fill it in one field at a time, the same way you would the outer table.
+If **Field** is a one2many (e.g. a newly-created vendor's own `bank_ids`, or a product's `seller_ids`), the row's Type/Value/Pattern disappear and a **Row Values** table takes their place - the exact same list-opens-a-form widget, one row per field of the one2many's own model (e.g. a bank account's `acc_number`), each with its own Type/Value/Pattern. Fill it in one field at a time, the same way you would the outer table. Row Values live only inside their one2many row: open **Vendors** to see its **Vendor** and **Vendor Product Code** - they are not listed in the outer table.
 
-A nested `Variable` row is matched a little differently than everywhere else in this module: since there's no per-row-relative pattern language to hand it "just this outer row's vendors," it searches the **whole document** fresh, and every `Variable` Row Values field is paired across the sub-records **by match position** instead - the 1st `acc_number` match goes with the 1st bank account, and so on. A `Fixed`-only nested field applies the same value to every sub-record; a one2many made entirely of `Fixed` rows creates exactly one sub-record. A mismatched match count between two `Variable` Row Values fields (same conservative rule as the outer table) skips the whole one2many rather than pairing rows incorrectly.
+A product line always gets a **Vendors** (`seller_ids`) row, with its required **Vendor** inside, even though nothing makes `seller_ids` required: a product created without a vendor row can never be found again by vendor code, so every later import would create a duplicate.
 
-Because the whole document is searched fresh rather than scoped to the outer row, a `lines` line's one2many field gets the **same** sub-records on every row of its own table - there's currently no way to scope Row Values extraction to just one outer row. This is rarely a problem in practice: a nested one2many is most useful on a `header` line, where there's only one row to begin with (the concrete case this was built for: a single imported document, e.g. an email, describing one record with a repeating sub-list like several vendor bank accounts).
+How Row Values are matched depends on the line:
+
+-   **`lines` line: one sub-record per row, from that row's own values.** Each Variable Row Value is extracted as a column aligned to the line's own table rows, exactly like any other New Document Values column - so on a two-item order, product A's vendor row gets A's vendor code and product B's gets B's. Fixed Row Values apply to every row's sub-record. A Row Values column that doesn't line up with the line's rows skips document creation for the whole line, same as an outer column does.
+-   **`header` line: matched across the whole document.** With only one row to begin with, Row Values search the whole document and are paired **by match position** - the 1st `acc_number` match goes with the 1st bank account, and so on - so one header can create several sub-records (the case this was built for: an email describing one vendor with several bank accounts). A `Fixed`-only one2many creates exactly one sub-record, and a mismatched match count between two Variable Row Values skips the whole one2many rather than pairing rows incorrectly.
+
+A one2many nested inside another one2many has no table row of its own, so it always uses the whole-document behaviour.
+
+### When a document is not created
+
+Every reason a document was not created is written to **Settings → Technical → Logging** (filter *Path* = `import_create_missing`), on its own database cursor. That matters: a failed creation usually fails the whole import, which rolls the import's own transaction back - a log entry written there would vanish with it. You will find either:
+
+-   `failed to create a missing … record for '…': <reason>` - Odoo rejected the `create()`, and the reason is Odoo's own error; or
+-   `… extracted N value(s) but the line itself has M row(s) - skipping document creation` - a New Document Values column (named, with its parent for a Row Value, e.g. `Vendors › Vendor Product Code`) didn't line up with the line's own rows.
+
+On an Xberg template, the warning banner also names every Variable row whose Pattern has no JSONPath of its own on a line that uses one: that Pattern searches the whole JSON document instead of the line's cells, and usually comes up empty.
 
 ## Configuration
 

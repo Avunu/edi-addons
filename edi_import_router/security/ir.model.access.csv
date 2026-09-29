@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_edi_import_router_system,edi.import.router system,model_edi_import_router,base.group_system,1,1,1,1
+access_edi_import_router_reviewer,edi.import.router reviewer,model_edi_import_router,group_import_router_reviewer,1,0,0,0
+access_edi_import_router_intake,edi.import.router intake,model_edi_import_router,group_import_router_intake,1,0,0,0
+access_edi_import_router_target_system,edi.import.router.target system,model_edi_import_router_target,base.group_system,1,1,1,1
+access_edi_import_router_target_reviewer,edi.import.router.target reviewer,model_edi_import_router_target,group_import_router_reviewer,1,0,0,0
+access_edi_import_router_document_system,edi.import.router.document system,model_edi_import_router_document,base.group_system,1,1,1,1
+access_edi_import_router_document_reviewer,edi.import.router.document reviewer,model_edi_import_router_document,group_import_router_reviewer,1,1,0,0

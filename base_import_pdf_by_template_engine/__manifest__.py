@@ -5,7 +5,7 @@
     "summary": "Per-line extraction seams for base_import_pdf_by_template, so "
     "other pattern engines (JSONPath, ...) and tooling (live preview, ...) "
     "can plug in without duplicating the base module's post-processing.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://avu.nu",

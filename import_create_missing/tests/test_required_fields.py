@@ -507,3 +507,44 @@ class TestVendorsAlwaysOffered(BaseCommon):
         vendors = self._row("seller_ids")
         self.assertTrue(vendors)
         self.assertIn("partner_id", vendors.child_value_ids.mapped("field_name"))
+
+
+@tagged(*_TAGS)
+class TestChildLineErrorHint(BaseCommon):
+    """The module-specific addition to
+    `base_import_pdf_by_template_engine`'s child-line error message: a
+    pointer at Settings > Technical > Logging when the template has a
+    'Create New Document if Not Found' line, since that's now where the
+    real reason a field ended up empty is most likely to be found."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.template = cls.env["base.import.pdf.template"].create(
+            {
+                "name": "Child Line Error Hint Test Template",
+                "model_id": cls.env.ref("base.model_res_partner").id,
+                "child_field_id": cls.env.ref("base.field_res_partner__bank_ids").id,
+            }
+        )
+        cls.line = cls.env["wizard.base.import.pdf.upload.line"].create({})
+
+    def test_hint_present_with_a_create_missing_line(self):
+        self.env["base.import.pdf.template.line"].create(
+            {
+                "template_id": self.template.id,
+                "related_model": "lines",
+                "field_id": self.env.ref(
+                    "base.field_res_partner_bank__partner_id"
+                ).id,
+                "search_field_id": self.env.ref("base.field_res_partner__name").id,
+                "create_missing": True,
+                "pattern": r"Vendor: (.+)\n",
+            }
+        )
+        hint = self.line._child_line_error_hint(self.template, {})
+        self.assertIsNotNone(hint)
+        self.assertIn("import_create_missing", hint)
+
+    def test_no_hint_without_a_create_missing_line(self):
+        self.assertIsNone(self.line._child_line_error_hint(self.template, {}))

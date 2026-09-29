@@ -40,13 +40,13 @@ class TestWithoutPattern(BaseCommon):
             {
                 "template_id": template.id,
                 "related_model": "header",
-                # `field_id`'s own ttype is irrelevant here: `date_format`
+                # `field_id`'s own ttype is irrelevant here: `date_time_format`
                 # and `mapped_ids` are plain stored fields on the *line*
                 # record, independent of what they'd be applied to by
                 # `_process_datetime_value()` in a real import.
                 "field_id": cls.model_field.id,
                 "pattern": r"Name: (.*)",
-                "date_format": "*d-*m-*Y",
+                "date_time_format": "*d-*m-*Y",
                 "mapped_ids": [(0, 0, {"origin": "N/A", "value": False})],
             }
         )
@@ -54,7 +54,7 @@ class TestWithoutPattern(BaseCommon):
     def test_real_record_falls_through_to_origin(self):
         twin = self.line._without_pattern()
         self.assertFalse(twin.pattern)
-        self.assertEqual(twin.date_format, self.line.date_format)
+        self.assertEqual(twin.date_time_format, self.line.date_time_format)
         self.assertEqual(
             twin.mapped_ids.mapped("origin"), self.line.mapped_ids.mapped("origin")
         )
@@ -69,13 +69,13 @@ class TestWithoutPattern(BaseCommon):
         # by odoo.models.origin_ids(), so every stored field reads back its
         # bare default.
         naive = self.line.new({"pattern": False}, origin=twin1)
-        self.assertFalse(naive.date_format)
-        self.assertNotEqual(naive.date_format, self.line.date_format)
+        self.assertFalse(naive.date_time_format)
+        self.assertNotEqual(naive.date_time_format, self.line.date_time_format)
         # `_without_pattern()` copies the resolved values instead and must
         # not exhibit that loss.
         twin2 = twin1._without_pattern()
         self.assertFalse(twin2.pattern)
-        self.assertEqual(twin2.date_format, self.line.date_format)
+        self.assertEqual(twin2.date_time_format, self.line.date_time_format)
         self.assertEqual(
             twin2.mapped_ids.mapped("origin"), self.line.mapped_ids.mapped("origin")
         )

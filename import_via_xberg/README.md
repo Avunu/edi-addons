@@ -41,7 +41,7 @@ So every table also gets two derived views, computed by `_transpose_table_cells(
 
 ## JSONPath + regex quick reference
 
-Verified against `jsonpath-ng` 1.8.0 and a real extraction (`tests/data/sample_parts_invoice.pdf`). Each row below is one line's `xberg_jsonpath` (the narrowing step) paired with a `pattern` regex (the refining step) that runs against whatever it selects:
+Verified against `jsonpath-ng` 1.8.0 and a real extraction of the synthetic fixture `tests/data/sample_parts_invoice.pdf`. Each row below is one line's `xberg_jsonpath` (the narrowing step) paired with a `pattern` regex (the refining step) that runs against whatever it selects:
 
 | `xberg_jsonpath` | narrows to | `pattern` | result |
 |---|---|---|---|

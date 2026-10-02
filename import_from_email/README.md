@@ -57,7 +57,7 @@ A document whose creation needs more than the template engine gives you out of t
 
 ## Reference fixture
 
-`tests/data/napa_order_confirmation.txt` is the plain-text body of a real NAPA Prolink order confirmation (Order # NPPLK-00000TESTA), and `napa_order_confirmation.html` is a trimmed-down HTML document reproducing the same structure. Both are used only to prove the extraction methods round-trip real-world content correctly; this module does not itself define a template or know what a NAPA order looks like — that belongs in whatever module actually imports NAPA confirmations.
+`tests/data/napa_order_confirmation.txt` is the plain-text body of a NAPA PROLink order confirmation with the customer, store, and order details replaced by fictional values (Order # NPPLK-00000TESTA), and `napa_order_confirmation.html` is a trimmed-down HTML document reproducing the same structure. Both are used only to prove the extraction methods round-trip real-world content correctly; this module does not itself define a template or know what a NAPA order looks like — that belongs in whatever module actually imports NAPA confirmations.
 
 ## Tests
 

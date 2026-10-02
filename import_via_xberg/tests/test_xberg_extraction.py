@@ -10,10 +10,10 @@ from odoo.addons.base.tests.common import BaseCommon
 
 
 class TestXbergExtraction(BaseCommon):
-    """`sample_parts_invoice.pdf` (tests/data/) is a real Example Truck
-    Sales purchase invoice - the same fixture the top-level `artifacts/`
-    directory uses to validate xberg's table extraction against a
-    real-world document.
+    """`sample_parts_invoice.pdf` (tests/data/) is a synthetic parts
+    invoice laid out like a real-world truck dealer invoice (one ruled
+    line-item table with a header row). Every name, address and number
+    in it is fictional.
     """
 
     def _data_file(self, filename):

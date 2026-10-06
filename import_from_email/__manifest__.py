@@ -20,8 +20,8 @@
         # child line has a pattern yet, and a "lines" column shorter than
         # its siblings silently shifting every later column of that row)
         # always apply wherever this module is installed - a template with
-        # a repeating item table (a NAPA order confirmation has one - see
-        # tests/data/napa_order_confirmation.txt) hits exactly this path.
+        # a repeating item table (a parts-supplier order confirmation has one - see
+        # tests/data/parts_order_confirmation.txt) hits exactly this path.
         "base_import_pdf_by_template_engine",
         "edi_core_oca",
     ],

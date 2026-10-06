@@ -273,7 +273,7 @@ class BaseImportPdfTemplateLine(models.Model):
 
         Written to `ir.logging` (Settings > Technical > Logging, Path =
         import_create_missing) on its OWN cursor - the same technique as
-        `product.napaonline.lookup._trace()`. A failed creation almost
+        a supplier-lookup module's own `_trace()` helper. A failed creation almost
         always goes on to fail the whole import (the line it was meant to
         fill is left empty), and that rolls back the import's transaction;
         a row written on the import's own cursor would vanish with it,

@@ -8,8 +8,8 @@ from odoo.addons.base.tests.common import BaseCommon
 
 
 class TestGenericProcessor(BaseCommon):
-    """`edi.input.process.template` is deliberately not about NAPA or
-    purchase orders: this test drives it against `res.partner` to prove the
+    """`edi.input.process.template` is deliberately not about any one
+    supplier or purchase orders: this test drives it against `res.partner` to prove the
     same processor works for any document/model pair, as long as an exchange
     type points `import_template_id` at a matching `base.import.pdf.template`.
     """

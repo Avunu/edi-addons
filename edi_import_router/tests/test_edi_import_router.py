@@ -71,7 +71,7 @@ class TestEdiImportRouter(BaseCommon):
             {
                 "router_id": cls.router.id,
                 "exchange_type_id": cls.html_type.id,
-                "description": "NAPA order confirmation",
+                "description": "Parts supplier order confirmation",
             }
         )
         cls.pdf_target = Target.create(
@@ -202,13 +202,13 @@ class TestEdiImportRouter(BaseCommon):
     # -- classification ----------------------------------------------------
 
     def test_email_routed_with_body(self):
-        doc = self._email(body="<p>NPPLK-1</p>")
+        doc = self._email(body="<p>ORD-1</p>")
         client = self._run(doc, str(self.html_target.id))
         self.assertEqual(doc.state, "routed")
         exchange = doc.exchange_record_id
         self.assertEqual(exchange.type_id, self.html_type)
         self.assertEqual(exchange.edi_exchange_state, "input_received")
-        self.assertEqual(base64.b64decode(exchange.exchange_file), b"<p>NPPLK-1</p>")
+        self.assertEqual(base64.b64decode(exchange.exchange_file), b"<p>ORD-1</p>")
         criteria = client.system_one.call_args.kwargs["questions"]["exchange_type"]
         self.assertIn("none", criteria.criteria)
 

@@ -60,7 +60,7 @@ class WizardBaseImportPdfMixin(models.AbstractModel):
         `odoo.tools.html2plaintext()` only turns `<tr>`, `</p>`, and `<br>`
         into line breaks - it has no handling for `<div>` at all. An email
         body built entirely out of `<div>` blocks (one per logical line,
-        as several NAPA order confirmations are) then collapses into one
+        as several parts-supplier order confirmations are) then collapses into one
         single continuous line with no newlines whatsoever once tags are
         stripped, which silently breaks every `base.import.pdf.template.
         line` pattern anchored with `^`/`$` (they need MULTILINE line
@@ -68,9 +68,8 @@ class WizardBaseImportPdfMixin(models.AbstractModel):
         `_get_table_info_data()`'s purely positional column-to-row zip:
         a pattern that matches zero times for one column doesn't remove a
         row, it shifts every later column's value one slot to the left for
-        every row, silently. This was traced against a real captured NAPA
-        order confirmation (see product_napaonline_lookup's README) before
-        fixing it here.
+        every row, silently. This was traced against a real captured parts-supplier
+        order confirmation before fixing it here.
         """
         return re.sub(r"(?i)<div", "\n<div", html_source)
 

@@ -39,8 +39,8 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
         line's own child table. Traced to exactly this after a live
         import kept failing with `"'product_id' is a required field"` on
         data that itself extracted and resolved correctly - see
-        product_napaonline_lookup's README for the fuller story of that
-        investigation.
+        the downstream supplier-lookup module's README for the fuller story
+        of that investigation.
         """
         super()._compute_template_id()
         for rec in self:

@@ -11,7 +11,7 @@ planned_and_name()` (depends: product_qty, product_uom, company_id,
 order_id.partner_id) re-derives price_unit from the vendor's
 product.supplierinfo.price the moment product_qty is assigned - discarding
 the extracted cost and storing 0.0 (that vendor price used to be 0.0 too,
-before product_napaonline_lookup started populating it). Reordering the
+before a supplier price-lookup module started populating it). Reordering the
 template's own lines cannot fix this in general; the wizard must.
 """
 from unittest import SkipTest
@@ -106,7 +106,7 @@ class TestExtractedValueOrdering(TransactionCase):
         cls.template = template
         cls.data = "\n".join(
             [
-                "Order #: NPPLK-ENGINE-TEST",
+                "Order #: ORD-ENGINE-TEST",
                 "Vendor: ENGINE TEST VENDOR",
                 "ACME ENGINE-TEST-1",
                 "Cost $99.99 /Each",
@@ -123,7 +123,7 @@ class TestExtractedValueOrdering(TransactionCase):
 
     def test_extracted_price_survives_the_product_qty_compute(self):
         record = self._process()
-        self.assertEqual(record.partner_ref, "NPPLK-ENGINE-TEST")
+        self.assertEqual(record.partner_ref, "ORD-ENGINE-TEST")
         self.assertEqual(len(record.order_line), 1)
         order_line = record.order_line
         self.assertEqual(order_line.product_id, self.product)

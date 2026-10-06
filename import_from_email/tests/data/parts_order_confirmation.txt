@@ -1,0 +1,67 @@
+--
+Example Owner
+Example Repair Shop
+
+
+---------- Forwarded message ---------
+From: Example Repair Shop <service@example.com>
+Date: Fri, Aug 21, 2026 at 12:42 PM
+Subject: Fwd: Order Confirmation ORD-00000TESTA
+To: <inbox@example.com>
+
+
+
+
+---------- Forwarded message ---------
+From: Customer Services Team <no-reply@parts-supplier.example>
+Date: Fri, Aug 21, 2026 at 12:07 PM
+Subject: Order Confirmation ORD-00000TESTA
+To: Example Repair Shop <service@example.com>
+
+
+[image: supplier logo] <https://parts-supplier.example/login>
+Hello, Example Repair Shop
+Order Confirmation
+Order #: ORD-00000TESTA
+
+Thank you for shopping with us. Your purchase has been divided into 2
+orders and is set to ship to:
+
+Subtotal: $265.75
+Shipping: $0.00
+Total: $265.75
+Today EXAMPLE AUTO PARTS STORE
+Suspension Control Arm - Front Right Lower
+NCP 2605438
+ACME
+Cost $114.96 /Each
+List $214.46 /Each
+$0.00 [image: core] | $0.00 [image: leaf]
+(1) Qty/Car 1
+Suspension Control Arm - Front Left Lower
+NCP 2605437
+ACME
+Cost $114.96 /Each
+List $214.46 /Each
+$0.00 [image: core] | $0.00 [image: leaf]
+(1) Qty/Car 1
+Today 04:46 PM EXAMPLE PARTS DC DC to Store Shuttle
+Valve Cover Gasket Set
+FPG VS50546R
+FEL-PRO Gaskets
+Cost $35.83 /Each
+List $59.62 /Each
+$0.00 [image: core] | $0.00 [image: leaf]
+(1) Qty/Car 1
+Thanks again,,
+Supplier Support
+[image: supplier logo] <https://parts-supplier.example/login>
+[image: vin decoder] [image: google play]
+<https://play.example/app> [image: apple store]
+<https://apps.example/app>
+(555) 010-0300 support@parts-supplier.example
+More About Us
+<https://parts-supplier.example/about> Our Privacy
+Policies
+<https://parts-supplier.example/privacy>
+© 2026 Example Parts Supplier

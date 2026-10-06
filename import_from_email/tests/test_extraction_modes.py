@@ -7,8 +7,8 @@ from odoo.addons.base.tests.common import BaseCommon
 
 
 class TestExtractionModes(BaseCommon):
-    """`plaintext` and `html` mirror a real NAPA Prolink order confirmation
-    email (tests/data/napa_order_confirmation.*) so a regex template built
+    """`plaintext` and `html` mirror a real parts-supplier order confirmation
+    email (tests/data/parts_order_confirmation.*) so a regex template built
     against these fixtures is known to match the real thing.
     """
 
@@ -39,20 +39,20 @@ class TestExtractionModes(BaseCommon):
         self.assertIn("pypdf", selection)
 
     def test_plaintext_extraction(self):
-        data = self._data_file("napa_order_confirmation.txt")
+        data = self._data_file("parts_order_confirmation.txt")
         res = self._mixin("plaintext").simple_pdf_text_extraction(data)
         self.assertEqual(res, [data.decode("utf-8")])
         text = res[0]
-        self.assertIn("Order #: NPPLK-00000TESTA", text)
+        self.assertIn("Order #: ORD-00000TESTA", text)
         self.assertIn("Cost $114.96 /Each", text)
         self.assertIn("Qty/Car 1", text)
 
     def test_html_extraction(self):
-        data = self._data_file("napa_order_confirmation.html")
+        data = self._data_file("parts_order_confirmation.html")
         res = self._mixin("html").simple_pdf_text_extraction(data)
         self.assertTrue(res)
         text = res[0]
-        self.assertIn("NPPLK-00000TESTA", text)
+        self.assertIn("ORD-00000TESTA", text)
         self.assertIn("265.75", text)
         self.assertIn("114.96", text)
         self.assertIn("Qty/Car", text)
@@ -65,14 +65,14 @@ class TestExtractionModes(BaseCommon):
         )
 
     def test_html_extraction_preserves_div_boundaries_as_lines(self):
-        """A real NAPA order confirmation (napa_order_confirmation_div.html,
+        """A real parts-supplier order confirmation (parts_order_confirmation_div.html,
         captured from a live production import) is built entirely out of
         `<div>` blocks, not `<table>`/`<tr>` like the fixture above -
         `html2plaintext()` has no handling for `<div>` at all, so without
         `_div_breaks()` every block collapses onto one continuous line.
         That silently breaks two things downstream: a `^`/`$`-anchored
-        template pattern (the shape product_napaonline_lookup's own
-        template uses for its part-number column) can never match
+        template pattern (the shape a supplier-lookup
+        module's own template uses for its part-number column) can never match
         anything, and `base.import.pdf.template._get_table_info_data()`'s
         purely positional column-to-row zip desyncs - a column with zero
         matches doesn't remove a row, it shifts every later column's value
@@ -81,7 +81,7 @@ class TestExtractionModes(BaseCommon):
         line item's `product_id` search value came out as the quantity
         ("1") instead of the real part number.
         """
-        data = self._data_file("napa_order_confirmation_div.html")
+        data = self._data_file("parts_order_confirmation_div.html")
         res = self._mixin("html").simple_pdf_text_extraction(data)
         lines = res[0].splitlines()
         # each part number is its own line - not glued to the vendor name
@@ -89,7 +89,7 @@ class TestExtractionModes(BaseCommon):
         self.assertIn("NCP 2605438", lines)
         self.assertIn("ECH EC235", lines)
         self.assertIn("FPG VS50546R", lines)
-        self.assertIn("NAPA", lines)
+        self.assertIn("ACME", lines)
 
     def test_grouped_parsing_tries_every_mode(self):
         """`_parse_pdf_grouped()` (used for template auto-detection before a
@@ -97,10 +97,10 @@ class TestExtractionModes(BaseCommon):
         working once new modes are registered: `pypdf` fails silently on a
         non-PDF attachment while `plaintext` succeeds.
         """
-        data = self._data_file("napa_order_confirmation.txt")
+        data = self._data_file("parts_order_confirmation.txt")
         attachment = self.env["ir.attachment"].create(
             {
-                "name": "napa_order_confirmation.txt",
+                "name": "parts_order_confirmation.txt",
                 "datas": b64encode(data),
             }
         )
@@ -109,4 +109,4 @@ class TestExtractionModes(BaseCommon):
         )
         grouped = line._parse_pdf_grouped()
         self.assertFalse(grouped["pypdf"])
-        self.assertIn("NPPLK-00000TESTA", "".join(grouped["plaintext"]))
+        self.assertIn("ORD-00000TESTA", "".join(grouped["plaintext"]))

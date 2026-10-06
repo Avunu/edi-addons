@@ -4,7 +4,7 @@ Adds a **Create New Document if Not Found** checkbox to a `base.import.pdf.templ
 
 ## Why
 
-`custom/product_napaonline_lookup` already does this for one specific case (creating `product.product` records from a NAPA part number via the parse.bot API). This module generalizes the same idea to any linked model, filled from the template's own extracted data instead of an external API: a Fixed value, or a Variable value pulled out with the same `Pattern` regex (and, if `import_create_missing_xberg` is also installed, the same JSONPath narrowing) the line itself uses.
+A private, supplier-specific lookup module already does this for one specific case (creating `product.product` records from a supplier part number via a third-party lookup API). This module generalizes the same idea to any linked model, filled from the template's own extracted data instead of an external API: a Fixed value, or a Variable value pulled out with the same `Pattern` regex (and, if `import_create_missing_xberg` is also installed, the same JSONPath narrowing) the line itself uses.
 
 ## How it works
 

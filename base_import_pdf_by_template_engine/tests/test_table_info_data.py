@@ -9,7 +9,7 @@ import re
 # at_install test creating a res.partner (via BaseCommon's setUpClass) dies
 # with a NotNullViolation before this module's own code even runs. After the
 # full load the field and its default exist and create works normally - the
-# same convention product_napaonline_lookup's own tests use.
+# same convention a downstream supplier-lookup module's own tests use.
 from odoo.tests import tagged
 from odoo.addons.base.tests.common import BaseCommon
 

@@ -41,6 +41,7 @@
                             <field name="backend_type_id" column_invisible="1"/>
                             <field name="backend_id"/>
                             <field name="source_type"/>
+                            <field name="reads" decoration-danger="reads == 'No import template'"/>
                             <field name="description"/>
                         </list>
                     </field>

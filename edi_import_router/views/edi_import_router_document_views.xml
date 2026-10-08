@@ -7,7 +7,7 @@
             <form create="0">
                 <header>
                     <button name="action_dispatch" type="object" string="Dispatch" class="btn-primary"
-                            invisible="state not in ('review', 'error')"/>
+                            invisible="state not in ('review', 'error') or not target_id"/>
                     <button name="action_reclassify" type="object" string="Re-classify"
                             invisible="state in ('pending', 'routed')"/>
                     <button name="action_ignore" type="object" string="Ignore"
@@ -34,8 +34,21 @@
                     <group invisible="not error_message">
                         <field name="error_message"/>
                     </group>
-                    <group string="TypeSafe's answer" invisible="not probabilities_display">
-                        <field name="probabilities_display" nolabel="1" colspan="2"/>
+                    <group string="TypeSafe's answer: route by hand" invisible="not choice_ids">
+                        <field name="choice_ids" nolabel="1" colspan="2" readonly="1">
+                            <list create="0" delete="0" no_open="1" decoration-muted="not readable">
+                                <field name="name"/>
+                                <field name="probability" widget="percentage"/>
+                                <field name="note"/>
+                                <field name="readable" column_invisible="1"/>
+                                <field name="is_none" column_invisible="1"/>
+                                <field name="document_state" column_invisible="1"/>
+                                <button name="action_route" type="object" string="Route here" class="btn-primary"
+                                        invisible="is_none or not readable or document_state == 'routed'"/>
+                                <button name="action_route" type="object" string="Ignore"
+                                        invisible="not is_none or document_state in ('routed', 'ignored')"/>
+                            </list>
+                        </field>
                     </group>
                 </sheet>
                 <chatter/>

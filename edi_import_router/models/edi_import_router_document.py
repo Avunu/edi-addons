@@ -19,7 +19,7 @@ from odoo.tools import html2plaintext
 
 from odoo.addons.queue_job.exception import RetryableJobError
 
-from .edi_import_router_target import BODY_MODES
+from .edi_import_router_target import reads_body, reads_pdf
 
 _logger = logging.getLogger(__name__)
 
@@ -75,7 +75,13 @@ class EdiImportRouterDocument(models.Model):
     target_id = fields.Many2one("edi.import.router.target", string="Target")
     confidence = fields.Float()
     probabilities = fields.Json()
-    probabilities_display = fields.Text(compute="_compute_probabilities_display")
+    choice_ids = fields.One2many(
+        "edi.import.router.document.choice",
+        "document_id",
+        string="Choices",
+        help="Every target of the router with TypeSafe's probability for it, "
+        "so a reviewer can route the document by hand.",
+    )
     error_message = fields.Text()
     exchange_record_id = fields.Many2one("edi.exchange.record", readonly=True)
     routed_record = fields.Reference(
@@ -97,20 +103,6 @@ class EdiImportRouterDocument(models.Model):
     def _selection_routed_record(self):
         models_ = self.env["ir.model"].sudo().search([("transient", "=", False)])
         return [(m.model, m.name) for m in models_]
-
-    @api.depends("probabilities")
-    def _compute_probabilities_display(self):
-        for doc in self:
-            names = {
-                str(t.id): t.exchange_type_id.name
-                for t in doc.router_id.target_ids.with_context(active_test=False)
-            }
-            names[NONE_CHOICE] = _("None of these (ignore)")
-            ranked = sorted((doc.probabilities or {}).items(), key=lambda kv: -kv[1])
-            doc.probabilities_display = "\n".join(
-                "%s: %.0f%%" % (names.get(key, key), value * 100)
-                for key, value in ranked
-            )
 
     @api.depends("exchange_record_id.model", "exchange_record_id.res_id")
     def _compute_routed_record(self):
@@ -251,20 +243,77 @@ class EdiImportRouterDocument(models.Model):
         match = _FORWARDED_FROM_RE.search(head) or _FROM_LINE_RE.search(head)
         return match.group(1).strip()[:200] if match else None
 
+    def _router_skip_reason(self, target):
+        """Why the target cannot be offered for this document, else ``None``.
+
+        A target the router's own Source setting excludes is a deliberate
+        choice and never counts as a problem (see `_router_unreadable_targets`).
+        """
+        self.ensure_one()
+        mode = target.template_mode
+        if not mode:
+            return _("its exchange type has no import template")
+        if self.source_type == "email" and reads_body(mode):
+            return None
+        if reads_pdf(mode):
+            if self._router_pdf():
+                return None
+            return _("its %s template needs a PDF and this email has none", mode)
+        return _("its %s template cannot read a printed PDF", mode)
+
+    def _router_source_allows(self, target):
+        return target.source_type in ("any", self.source_type)
+
     def _router_offered_targets(self):
         """The router's targets that accept this source and can read its file."""
         self.ensure_one()
-        has_pdf = bool(self._router_pdf())
-        targets = self.router_id.target_ids.filtered("active")
+        return self.router_id.target_ids.filtered(
+            lambda t: t.active
+            and self._router_source_allows(t)
+            and not self._router_skip_reason(t)
+        )
 
-        def offered(target):
-            if target.source_type not in ("any", self.source_type):
-                return False
-            if target.template_mode in BODY_MODES:
-                return self.source_type == "email"
-            return has_pdf
+    def _router_unreadable_targets(self):
+        """Active targets that should have been considered but cannot read
+        this document. While any exist, TypeSafe's 'none' is not trustworthy:
+        it was never asked about them."""
+        self.ensure_one()
+        return self.router_id.target_ids.filtered(
+            lambda t: t.active
+            and self._router_source_allows(t)
+            and self._router_skip_reason(t)
+        )
 
-        return targets.filtered(offered)
+    def _router_refresh_choices(self, probabilities=None):
+        """Rebuild the reviewer's list of choices, best answer first."""
+        self.ensure_one()
+        probabilities = probabilities or {}
+        vals = [
+            {
+                "document_id": self.id,
+                "target_id": target.id,
+                "probability": probabilities.get(str(target.id), 0.0),
+                "note": self._router_skip_reason(target)
+                or (
+                    False
+                    if self._router_source_allows(target)
+                    else _("limited to other kinds of document")
+                ),
+                "readable": self._router_source_allows(target)
+                and not self._router_skip_reason(target),
+            }
+            for target in self.router_id.target_ids.filtered("active")
+        ]
+        vals.append(
+            {
+                "document_id": self.id,
+                "is_none": True,
+                "probability": probabilities.get(NONE_CHOICE, 0.0),
+                "readable": True,
+            }
+        )
+        self.choice_ids.unlink()
+        self.env["edi.import.router.document.choice"].create(vals)
 
     def _router_typesafe_criteria(self, targets):
         criteria = {
@@ -280,11 +329,14 @@ class EdiImportRouterDocument(models.Model):
     def _router_exchange_file(self, target):
         """``(bytes, filename)`` in the form the target's template reads."""
         self.ensure_one()
-        if target.template_mode in BODY_MODES:
-            if self.source_type != "email":
-                raise UserError(_("A printed document has no email body to read."))
+        mode = target.template_mode
+        if self.source_type == "email" and reads_body(mode):
+            # As the direct alias does (import_from_email): the body is the
+            # exchange file, even for a template that could also read a PDF.
             name = "%s.html" % (self.message_id or self.id)
             return base64.b64decode(self.email_body or b""), name
+        if not reads_pdf(mode):
+            raise UserError(_("A printed document has no email body to read."))
         pdf = self._router_pdf()
         if not pdf:
             raise UserError(_("This document has no PDF for a PDF template to read."))
@@ -300,6 +352,19 @@ class EdiImportRouterDocument(models.Model):
         if self.state not in ("pending", "review", "error"):
             return
         targets = self._router_offered_targets()
+        unreadable = self._router_unreadable_targets()
+        self._router_refresh_choices()
+        if unreadable:
+            self.message_post(
+                body=_(
+                    "Not offered to TypeSafe: %s.",
+                    "; ".join(
+                        "%s (%s)"
+                        % (t.exchange_type_id.name, self._router_skip_reason(t))
+                        for t in unreadable
+                    ),
+                )
+            )
         if not targets:
             return self._router_set_review(
                 _("No target of this router can read this document.")
@@ -332,7 +397,16 @@ class EdiImportRouterDocument(models.Model):
                 "probabilities": dict(answer.probabilities),
             }
         )
+        self._router_refresh_choices(dict(answer.probabilities))
         if answer.choice == NONE_CHOICE:
+            if unreadable:
+                return self._router_set_review(
+                    _(
+                        "TypeSafe answered 'none', but it was not asked about "
+                        "%s (see the note above). Choose by hand.",
+                        ", ".join(unreadable.mapped("exchange_type_id.name")),
+                    )
+                )
             if answer.confidence >= router.ignore_threshold:
                 self.write({"state": "ignored", "error_message": False})
                 return self.message_post(
@@ -399,6 +473,8 @@ class EdiImportRouterDocument(models.Model):
         self.ensure_one()
         self.write({"state": "review", "error_message": reason})
         user = self.router_id.responsible_user_id
+        # One open to-do per document, however many times it is re-reviewed.
+        self.sudo().activity_unlink(["mail.mail_activity_data_todo"])
         if user:
             self.activity_schedule(
                 "mail.mail_activity_data_todo",
@@ -420,14 +496,31 @@ class EdiImportRouterDocument(models.Model):
         for doc in self.sudo():
             if not doc.target_id:
                 raise UserError(_("Choose a target first."))
-            if doc.state not in ("review", "error", "pending"):
-                raise UserError(_("Only documents waiting for review can be dispatched."))
-            doc.activity_unlink(["mail.mail_activity_data_todo"])
-            doc._router_dispatch(doc.target_id)
+            doc._router_manual_route(doc.target_id)
+
+    def _router_manual_route(self, target):
+        """File this document under ``target``, chosen by a person."""
+        self.ensure_one()
+        if self.state == "routed":
+            raise UserError(_("This document is already routed."))
+        if target.router_id != self.router_id:
+            raise UserError(_("That target belongs to another router."))
+        self.activity_unlink(["mail.mail_activity_data_todo"])
+        self.target_id = target
+        self.message_post(
+            body=_(
+                "%(user)s chose %(type)s.",
+                user=self.env.user.name,
+                type=target.exchange_type_id.display_name,
+            )
+        )
+        self._router_dispatch(target)
 
     def action_reclassify(self):
         self._check_reviewer()
         for doc in self:
+            if doc.state == "routed":
+                raise UserError(_("This document is already routed."))
             doc.write({"state": "pending", "error_message": False})
             doc._router_enqueue()
 

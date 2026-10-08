@@ -7,13 +7,17 @@ from unittest.mock import MagicMock, patch
 from reportlab.pdfgen import canvas
 from typesafe_sdk import TypeSafeError
 
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import Form
 
 from odoo.addons.base.tests.common import BaseCommon
 from odoo.addons.queue_job.tests.common import trap_jobs
 
 from odoo.addons.edi_import_router.models import edi_import_router as router_module
+from odoo.addons.edi_import_router.models.edi_import_router_target import (
+    reads_body,
+    reads_pdf,
+)
 
 
 def _pdf(text="Quote Q-1001 FleetPride"):
@@ -199,6 +203,29 @@ class TestEdiImportRouter(BaseCommon):
         self.pdf_target.source_type = "email"
         self.assertFalse(printed._router_offered_targets())
 
+    def test_extraction_modes_by_source(self):
+        # xberg parses HTML as readily as a PDF, so it reads both
+        self.assertEqual((reads_body("html"), reads_pdf("html")), (True, False))
+        self.assertEqual((reads_body("plaintext"), reads_pdf("plaintext")), (True, False))
+        self.assertEqual((reads_body("pypdf"), reads_pdf("pypdf")), (False, True))
+        self.assertEqual((reads_body("xberg"), reads_pdf("xberg")), (True, True))
+        self.assertEqual((reads_body(False), reads_pdf(False)), (False, False))
+
+    def test_both_readers_target_gets_email_body(self):
+        both = patch.multiple(
+            "odoo.addons.edi_import_router.models.edi_import_router_document",
+            reads_body=lambda mode: True,
+            reads_pdf=lambda mode: True,
+        )
+        email = self._email()
+        with both:
+            self.assertEqual(
+                email._router_offered_targets(), self.html_target | self.pdf_target
+            )
+            content, name = email._router_exchange_file(self.pdf_target)
+        self.assertEqual(content, b"<p>Order</p>")
+        self.assertTrue(name.endswith(".html"))
+
     # -- classification ----------------------------------------------------
 
     def test_email_routed_with_body(self):
@@ -220,23 +247,81 @@ class TestEdiImportRouter(BaseCommon):
         self.assertIn("Quote Q-1001", doc._router_typesafe_state()["pdf text"])
 
     def test_none_is_ignored(self):
-        doc = self._email()
+        doc = self._email(pdf=True)  # both targets can read it
         self._run(doc, "none", confidence=0.99)
         self.assertEqual(doc.state, "ignored")
         self.assertFalse(doc.exchange_record_id)
 
     def test_soft_none_needs_review(self):
-        doc = self._email()
+        doc = self._email(pdf=True)
         self._run(doc, "none", confidence=0.93)
         self.assertEqual(doc.state, "review")
         self.assertIn("93%", doc.error_message)
 
-    def test_probabilities_display(self):
+    def test_choices_list_every_target_with_probability(self):
+        doc = self._email(pdf=True)
+        self._run(doc, "none", confidence=0.6)
+        choices = {c.name: c for c in doc.choice_ids}
+        self.assertEqual(set(choices), {"router_html", "router_pdf", "None of these (ignore)"})
+        self.assertAlmostEqual(choices["None of these (ignore)"].probability, 0.6)
+        self.assertEqual(doc.choice_ids[0].name, "None of these (ignore)")  # best first
+        self.assertTrue(all(c.readable for c in doc.choice_ids))
+
+    def test_none_with_unreadable_target_needs_review(self):
+        doc = self._email()  # no PDF, so the PDF target cannot be offered
+        client = self._run(doc, "none", confidence=0.99)
+        self.assertEqual(doc.state, "review")
+        self.assertIn("router_pdf", doc.error_message)
+        criteria = client.system_one.call_args.kwargs["questions"]["exchange_type"].criteria
+        self.assertNotIn(str(self.pdf_target.id), criteria)
+        note = " ".join(doc.message_ids.mapped("body"))
+        self.assertIn("Not offered to TypeSafe", note)
+        choices = {c.name: c for c in doc.choice_ids}
+        self.assertFalse(choices["router_pdf"].readable)
+        self.assertIn("needs a PDF", choices["router_pdf"].note)
+
+    def test_route_by_hand_from_choice(self):
         doc = self._email()
-        doc.probabilities = {str(self.html_target.id): 0.31, "none": 0.69}
-        self.assertEqual(
-            doc.probabilities_display, "None of these (ignore): 69%\nrouter_html: 31%"
-        )
+        self._run(doc, "none", confidence=0.5)
+        self.assertEqual(doc.state, "review")
+        choice = doc.choice_ids.filtered(lambda c: c.target_id == self.html_target)
+        choice.action_route()
+        self.assertEqual(doc.state, "routed")
+        self.assertEqual(doc.target_id, self.html_target)
+        self.assertEqual(doc.exchange_record_id.type_id, self.html_type)
+
+    def test_route_by_hand_rescues_ignored_document(self):
+        doc = self._email(pdf=True)
+        self._run(doc, "none", confidence=0.99)
+        self.assertEqual(doc.state, "ignored")
+        doc.choice_ids.filtered(lambda c: c.target_id == self.pdf_target).action_route()
+        self.assertEqual(doc.state, "routed")
+        self.assertEqual(doc.exchange_record_id.type_id, self.pdf_type)
+
+    def test_none_choice_ignores(self):
+        doc = self._email()
+        self._run(doc, "none", confidence=0.5)
+        doc.choice_ids.filtered("is_none").action_route()
+        self.assertEqual(doc.state, "ignored")
+
+    def test_routed_document_cannot_be_rerouted(self):
+        doc = self._email()
+        self._run(doc, str(self.html_target.id))
+        with self.assertRaises(UserError):
+            doc.choice_ids.filtered(lambda c: c.target_id == self.html_target).action_route()
+        with self.assertRaises(UserError):
+            doc.action_reclassify()
+
+    def test_review_keeps_one_open_activity(self):
+        self.router.responsible_user_id = self.env.user
+        doc = self._email()
+        for _i in range(2):
+            self._run(doc, str(self.html_target.id), confidence=0.3)
+        self.assertEqual(len(doc.activity_ids), 1)
+
+    def test_reads_column(self):
+        self.assertEqual(self.html_target.reads, "Email body")
+        self.assertEqual(self.pdf_target.reads, "PDF")
 
     def test_original_sender_from_forwarded_header(self):
         body = (

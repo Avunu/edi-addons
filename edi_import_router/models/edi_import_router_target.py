@@ -5,6 +5,26 @@ from odoo.exceptions import ValidationError
 
 # Template extraction modes that read an email body rather than a PDF.
 BODY_MODES = ("html", "plaintext")
+# Template extraction modes that read only a PDF.
+PDF_MODES = ("pypdf",)
+
+
+def reads_body(mode):
+    """Whether a template in this extraction mode can read an email body.
+
+    Every mode except ``pypdf`` can: ``html`` and ``plaintext`` by design,
+    ``xberg`` (and any later mode) because it parses HTML as readily as a PDF.
+    No template at all reads nothing.
+    """
+    return bool(mode) and mode not in PDF_MODES
+
+
+def reads_pdf(mode):
+    """Whether a template in this extraction mode can read a PDF.
+
+    Every mode except ``html`` and ``plaintext`` can; see :func:`reads_body`.
+    """
+    return bool(mode) and mode not in BODY_MODES
 
 
 class EdiImportRouterTarget(models.Model):
@@ -47,9 +67,27 @@ class EdiImportRouterTarget(models.Model):
         "title, and distinctive text. This is what TypeSafe reads, so name "
         "the difference when two vendors share a sender (e.g. the dealer).",
     )
+    reads = fields.Char(
+        compute="_compute_reads",
+        help="What this exchange type's import template can read. An email "
+        "with no PDF attached is never offered to a PDF-only template.",
+    )
     template_mode = fields.Selection(
         related="exchange_type_id.import_template_id.extraction_mode"
     )
+
+    @api.depends("template_mode")
+    def _compute_reads(self):
+        for target in self:
+            mode = target.template_mode
+            if not mode:
+                target.reads = _("No import template")
+            elif reads_body(mode) and reads_pdf(mode):
+                target.reads = _("Email body or PDF")
+            elif reads_body(mode):
+                target.reads = _("Email body")
+            else:
+                target.reads = _("PDF")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -69,7 +107,7 @@ class EdiImportRouterTarget(models.Model):
     def _check_source_type(self):
         for target in self:
             mode = target.template_mode
-            if target.source_type == "print" and mode in BODY_MODES:
+            if target.source_type == "print" and mode and not reads_pdf(mode):
                 raise ValidationError(
                     _(
                         "'%(type)s' uses a %(mode)s template, which cannot "

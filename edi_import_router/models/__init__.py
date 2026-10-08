@@ -3,5 +3,6 @@
 from . import edi_import_router
 from . import edi_import_router_target
 from . import edi_import_router_document
+from . import edi_import_router_document_choice
 from . import ir_attachment
 from . import res_config_settings

@@ -111,6 +111,10 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
         parts = []
         for field_name, value in values.items():
             if isinstance(value, models.BaseModel):
+                # A record the failed row just created (create_missing)
+                # may already be rolled back; don't let the summary mask
+                # the real error with a MissingError.
+                value = value.exists()
                 if not value:
                     continue
                 value = value.display_name

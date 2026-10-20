@@ -88,6 +88,39 @@ class TestXbergJsonpathNarrowing(BaseCommon):
         )
         self.assertEqual(line._get_column_values(SAMPLE_TEXT), ["0013", "9999"])
 
+    def test_column_keeps_a_row_whose_cell_does_not_match(self):
+        # A totals row's blank cell must stay a "" in its position, not
+        # vanish from the column - otherwise this column is shorter than
+        # one that keeps it, and later rows pair with the wrong cell.
+        text = json.dumps(
+            {
+                "tables": [
+                    {
+                        "cellsByHeader": [
+                            {"Description": "Oil Filter"},
+                            {"Description": ""},
+                            {"Description": "Fuel Filter"},
+                        ]
+                    }
+                ]
+            }
+        )
+        line = self._make_line(
+            related_model="lines",
+            xberg_jsonpath="$.tables[0].cellsByHeader[*].Description",
+            pattern=r"\S.*",
+        )
+        self.assertEqual(
+            line._get_column_values(text), ["Oil Filter", "", "Fuel Filter"]
+        )
+
+    def test_column_without_pattern_is_empty(self):
+        line = self._make_line(
+            related_model="lines",
+            xberg_jsonpath="$.tables[0].cellsByHeader[*].ITEM",
+        )
+        self.assertEqual(line._get_column_values(SAMPLE_TEXT), [])
+
     def test_process_value_tail_applies_float_conversion_unmodified(self):
         """No override of `_process_value()` exists in this module any
         more - `pattern` is always a real regex, so the base module's own

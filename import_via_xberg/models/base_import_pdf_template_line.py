@@ -189,7 +189,26 @@ class BaseImportPdfTemplateLine(models.Model):
         return "\n".join(rows)[:_JSONPATH_PREVIEW_MAX_CHARS]
 
     def _get_column_values(self, text):
-        return super()._get_column_values(self._xberg_narrow_text(text))
+        """One value per JSONPath match - the cell's first `pattern` match,
+        or "" when the cell has none - so a table row keeps its position
+        even when one of its cells is blank. Matching the regex against
+        all the cells joined together instead would drop a non-matching
+        cell (a totals row's empty Description) from the column, leaving
+        it shorter than a column that kept it as "" - the way
+        `import_create_missing_xberg` extracts New Document Values - and
+        every later row would pair with the wrong cell."""
+        self.ensure_one()
+        if self.extraction_mode != "xberg" or not self.xberg_jsonpath:
+            return super()._get_column_values(text)
+        if not self.pattern:
+            return []
+        values = []
+        for match in self._jsonpath_matches(self.xberg_jsonpath, text):
+            cell_values = super()._get_column_values(
+                self._jsonpath_to_text(match.value)
+            )
+            values.append(cell_values[0] if cell_values else "")
+        return values
 
     def _get_field_value(self, text):
         return super()._get_field_value(self._xberg_narrow_text(text))

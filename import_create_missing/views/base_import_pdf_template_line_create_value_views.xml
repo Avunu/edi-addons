@@ -71,35 +71,43 @@
                              drift apart. -->
                         <field
                             name="fixed_value"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'char'"
                         />
                         <field
                             name="fixed_value_boolean"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'boolean'"
                         />
                         <field
                             name="fixed_value_integer"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'integer'"
                         />
                         <field
                             name="fixed_value_float"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'float'"
                         />
                         <field
                             name="fixed_value_selection_id"
+                            string="Value"
                             options="{'no_create': True, 'no_open': True}"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'selection'"
                         />
                         <field
                             name="fixed_value_date"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'date'"
                         />
                         <field
                             name="fixed_value_datetime"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'datetime'"
                         />
                         <field
                             name="fixed_value_ref"
+                            string="Value"
                             invisible="value_type != 'fixed' or fixed_value_kind != 'record'"
                         />
                         <field

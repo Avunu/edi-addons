@@ -127,27 +127,29 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
         ],
         compute="_compute_fixed_value_kind",
     )
+    # Model-level labels are distinct so the filter/export field pickers can
+    # tell them apart; the form view puts `string="Value"` back on each one.
     fixed_value = fields.Char(
-        string="Value",
+        string="Value (Text)",
         help="Used for a text/html/json field. Other field types get a "
         "typed input of their own (a checkbox, a number, a dropdown, a "
         "date picker or a record picker).",
     )
-    fixed_value_boolean = fields.Boolean(string="Value")
-    fixed_value_integer = fields.Integer(string="Value")
-    fixed_value_float = fields.Float(string="Value")
-    fixed_value_date = fields.Date(string="Value")
-    fixed_value_datetime = fields.Datetime(string="Value")
+    fixed_value_boolean = fields.Boolean(string="Value (Boolean)")
+    fixed_value_integer = fields.Integer(string="Value (Integer)")
+    fixed_value_float = fields.Float(string="Value (Float)")
+    fixed_value_date = fields.Date(string="Value (Date)")
+    fixed_value_datetime = fields.Datetime(string="Value (Datetime)")
     fixed_value_selection_id = fields.Many2one(
         comodel_name="ir.model.fields.selection",
-        string="Value",
+        string="Value (Selection)",
         domain="[('field_id', '=', field_id)]",
         ondelete="cascade",
         help="The selection option to set, for a selection field.",
     )
     fixed_value_ref = fields.Reference(
         selection="_selection_reference_value",
-        string="Value",
+        string="Value (Record)",
         help="The fixed record to set, for a many2one field.",
     )
     pattern = fields.Char(
@@ -181,6 +183,7 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
     )
     has_missing_required = fields.Boolean(
         compute="_compute_has_missing_required",
+        recursive=True,
         string="Missing",
         help="This row (or, for a one2many, one of its Row Values) is a "
         "required field with no Odoo default and nothing set - the "

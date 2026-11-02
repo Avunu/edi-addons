@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Sane default the first time the module is installed - changeable
+         afterward from Settings > Purchase like any other config param. -->
+    <record id="edi_po_notify_group_id_default" model="ir.config_parameter" forcecreate="0">
+        <field name="key">edi_purchase_order_import.notify_group_id</field>
+        <field name="value" eval="ref('purchase.group_purchase_manager')"/>
+    </record>
+
+</odoo>

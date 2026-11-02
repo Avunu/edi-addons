@@ -8,7 +8,7 @@
     "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
-    "website": "https://avu.nu",
+    "website": "https://github.com/Avunu/edi-addons",
     "license": "AGPL-3",
     "depends": [
         "import_create_missing",

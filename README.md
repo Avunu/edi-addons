@@ -65,6 +65,20 @@ Each module's `__manifest__.py` is the source of truth. Besides Odoo core module
 
 `xberg` ships prebuilt wheels for Linux and macOS (x86_64 and arm64), so installing it needs no Rust toolchain. `edi_import_router` also needs a TypeSafe API key, entered in Settings or set as `TYPESAFE_API_KEY`; see its README.
 
+## Development
+
+The repository carries its own development environment, built by [odoo-nix](https://github.com/Avunu/odoo-nix) in addons mode. OCB and the repositories these modules depend on are flake inputs pinned in `flake.lock`, and the Python environment is locked in `nix/`. You need Nix with flakes, and optionally direnv.
+
+```sh
+git clone https://github.com/Avunu/edi-addons.git && cd edi-addons
+direnv allow                  # or: nix develop --no-pure-eval
+devenv up                     # PostgreSQL, Odoo and Mailpit
+odoo db provision             # a database with every module here installed
+odoo test base_import_pdf_by_template_engine
+```
+
+After `nix flake update`, or when a module gains a `depends` or a Python requirement, run `odoo project relock` and commit `flake.lock` and `nix/`. A new dependency on another repository also needs its input and an `externalSources` entry in `flake.nix`. See odoo-nix's [A repository of addons](https://github.com/Avunu/odoo-nix/blob/main/docs/scaffolding/addons-repository.md).
+
 ## Tests
 
 Odoo runs a module's tests when you install or update it with `--test-enable`. Select a module's tests with a `--test-tags` filter and use a throwaway database:

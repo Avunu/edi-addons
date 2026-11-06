@@ -721,7 +721,8 @@
         "oca-edi-framework": "oca-edi-framework",
         "oca-queue": "oca-queue",
         "ocb": "ocb",
-        "odoo-nix": "odoo-nix"
+        "odoo-nix": "odoo-nix",
+        "standards-profile": "standards-profile"
       }
     },
     "rust-overlay": {
@@ -743,6 +744,23 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "standards-profile": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793928770,
+        "narHash": "sha256-peu3l+G81p+7p0y+Tu3vrHnVHNHN4xJqw6Gc1Y2lggM=",
+        "owner": "Avunu",
+        "repo": "odoo-standards-profile",
+        "rev": "b4c33f004ec4d7590c4039b882289bcd60d08010",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Avunu",
+        "ref": "v1",
+        "repo": "odoo-standards-profile",
         "type": "github"
       }
     },

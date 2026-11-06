@@ -1,0 +1,3 @@
+# Mass reformats (style: commits), one SHA per line with its subject as a comment:
+# <40-hex sha>  # <subject>. GitHub reads this file; the dev shell sets
+# blame.ignoreRevsFile so `git blame` does too.

@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "Odoo.odoo",
+    "charliermarsh.ruff",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}

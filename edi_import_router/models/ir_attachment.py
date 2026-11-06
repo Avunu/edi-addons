@@ -38,6 +38,8 @@ class IrAttachment(models.Model):
             and values.get("res_id")
             and self.env.user.has_group(INTAKE_GROUP)
         ):
-            self.env[ROUTER_MODEL].browse(values["res_id"]).exists().check_access("read")
+            self.env[ROUTER_MODEL].browse(values["res_id"]).exists().check_access(
+                "read"
+            )
             return
         return super().check(mode, values)

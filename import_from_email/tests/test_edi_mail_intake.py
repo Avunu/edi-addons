@@ -51,13 +51,13 @@ class TestEdiMailIntake(BaseCommon):
         )
         self.assertEqual(record.type_id, self.exchange_type)
         self.assertEqual(record.backend_id, self.backend)
-        self.assertEqual(record.exchange_filename, "<abc123@parts-supplier.example>.html")
+        self.assertEqual(
+            record.exchange_filename, "<abc123@parts-supplier.example>.html"
+        )
         # the whole document is already in hand - no separate "receive"
         # round-trip needed, so `quick_exec` must see it as ready to process
         self.assertEqual(record.edi_exchange_state, "input_received")
-        self.assertIn(
-            "ORD-00000TESTA", b64decode(record.exchange_file).decode()
-        )
+        self.assertIn("ORD-00000TESTA", b64decode(record.exchange_file).decode())
 
     def test_message_new_without_backend_id_raises(self):
         with self.assertRaises(UserError):

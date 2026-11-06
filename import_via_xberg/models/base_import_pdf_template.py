@@ -13,7 +13,7 @@ class BaseImportPdfTemplate(models.Model):
     xberg_config = fields.Text(
         string="Xberg configuration",
         help="A JSON object merged into xberg's `FileExtractionConfig` for "
-        "this template's extractions, e.g. `{\"ocr\": {\"enabled\": true}}`. "
+        'this template\'s extractions, e.g. `{"ocr": {"enabled": true}}`. '
         "Left blank, extraction uses xberg's defaults. See the xberg "
         "documentation for the full configuration schema.",
     )

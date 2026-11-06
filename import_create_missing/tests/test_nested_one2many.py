@@ -1,6 +1,8 @@
 # Copyright 2026 Avunu LLC (avu.nu)
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 from odoo.tests import tagged
+from odoo.tools import mute_logger
+
 from odoo.addons.base.tests.common import BaseCommon
 
 _TAGS = ("post_install", "-at_install")
@@ -26,9 +28,7 @@ class TestNestedOneToMany(BaseCommon):
             {
                 "name": "Nested O2M Test Template",
                 "model_id": cls.env.ref("base.model_res_partner").id,
-                "child_field_id": cls.env.ref(
-                    "base.field_res_partner__child_ids"
-                ).id,
+                "child_field_id": cls.env.ref("base.field_res_partner__child_ids").id,
             }
         )
         # A "header" line: the missing PARENT COMPANY of the imported
@@ -45,9 +45,7 @@ class TestNestedOneToMany(BaseCommon):
             }
         )
         cls.bank_ids_field = cls.env.ref("base.field_res_partner__bank_ids")
-        cls.acc_number_field = cls.env.ref(
-            "base.field_res_partner_bank__acc_number"
-        )
+        cls.acc_number_field = cls.env.ref("base.field_res_partner_bank__acc_number")
 
     def _make_bank_create_value(self):
         return self.CreateValue.create(
@@ -76,10 +74,13 @@ class TestNestedOneToMany(BaseCommon):
         parent = header_values.get("parent_id")
         self.assertTrue(parent)
         self.assertEqual(parent.name, "Acme Corp")
-        self.assertEqual(sorted(parent.bank_ids.mapped("acc_number")), [
-            "111-222",
-            "333-444",
-        ])
+        self.assertEqual(
+            sorted(parent.bank_ids.mapped("acc_number")),
+            [
+                "111-222",
+                "333-444",
+            ],
+        )
 
     def test_one2many_with_only_fixed_children_creates_one_row(self):
         bank_row = self._make_bank_create_value()
@@ -118,9 +119,7 @@ class TestNestedOneToMany(BaseCommon):
             {
                 "line_id": self.line.id,
                 "parent_id": bank_row.id,
-                "field_id": self.env.ref(
-                    "base.field_res_partner_bank__sequence"
-                ).id,
+                "field_id": self.env.ref("base.field_res_partner_bank__sequence").id,
                 "value_type": "variable",
                 "pattern": r"ONLY-ONE: (\d+)",
             }
@@ -205,9 +204,7 @@ class TestNestedOneToManyPerRow(BaseCommon):
             {
                 "name": "Nested O2M Per-Row Test Template",
                 "model_id": cls.env.ref("base.model_res_partner").id,
-                "child_field_id": cls.env.ref(
-                    "base.field_res_partner__child_ids"
-                ).id,
+                "child_field_id": cls.env.ref("base.field_res_partner__child_ids").id,
             }
         )
         # One row per contact; each contact's missing PARENT company is
@@ -271,6 +268,9 @@ class TestNestedOneToManyPerRow(BaseCommon):
                 self._partner(name).bank_ids.mapped("acc_number"), ["000-FIXED"]
             )
 
+    @mute_logger(
+        "odoo.addons.import_create_missing.models.base_import_pdf_template_line",
+    )
     def test_misaligned_child_column_skips_the_line(self):
         self.CreateValue.create(
             {

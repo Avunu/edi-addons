@@ -3,6 +3,8 @@
 from base64 import b64encode
 from os import path
 
+from odoo.tools import mute_logger
+
 from odoo.addons.base.tests.common import BaseCommon
 
 
@@ -91,6 +93,10 @@ class TestExtractionModes(BaseCommon):
         self.assertIn("FPG VS50546R", lines)
         self.assertIn("ACME", lines)
 
+    @mute_logger(
+        "pypdf._reader",
+        "odoo.addons.base_import_pdf_by_template.wizards.wizard_base_import_pdf_mixin",
+    )
     def test_grouped_parsing_tries_every_mode(self):
         """`_parse_pdf_grouped()` (used for template auto-detection before a
         template, and therefore an extraction mode, is known) must keep

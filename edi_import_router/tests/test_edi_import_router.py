@@ -8,16 +8,15 @@ from reportlab.pdfgen import canvas
 from typesafe_sdk import TypeSafeError
 
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import Form
+from odoo.tools import mute_logger
 
 from odoo.addons.base.tests.common import BaseCommon
-from odoo.addons.queue_job.tests.common import trap_jobs
-
 from odoo.addons.edi_import_router.models import edi_import_router as router_module
 from odoo.addons.edi_import_router.models.edi_import_router_target import (
     reads_body,
     reads_pdf,
 )
+from odoo.addons.queue_job.tests.common import trap_jobs
 
 
 def _pdf(text="Quote Q-1001 FleetPride"):
@@ -93,8 +92,16 @@ class TestEdiImportRouter(BaseCommon):
                 "name": "ERP Printer",
                 "login": "erp_printer",
                 "groups_id": [
-                    (6, 0, [cls.env.ref("edi_import_router.group_import_router_intake").id,
-                            cls.env.ref("base.group_user").id])
+                    (
+                        6,
+                        0,
+                        [
+                            cls.env.ref(
+                                "edi_import_router.group_import_router_intake"
+                            ).id,
+                            cls.env.ref("base.group_user").id,
+                        ],
+                    )
                 ],
             }
         )
@@ -104,7 +111,12 @@ class TestEdiImportRouter(BaseCommon):
     def _email(self, body="<p>Order</p>", pdf=False):
         with trap_jobs():
             doc = self.env["edi.import.router.document"].message_new(
-                {"subject": "Order", "body": body, "email_from": "a@b.c", "message_id": "<m1@x>"},
+                {
+                    "subject": "Order",
+                    "body": body,
+                    "email_from": "a@b.c",
+                    "message_id": "<m1@x>",
+                },
                 {"router_id": self.router.id},
             )
         if pdf:
@@ -147,7 +159,9 @@ class TestEdiImportRouter(BaseCommon):
             client.system_one.side_effect = error
         else:
             response = MagicMock()
-            response.choices = {"exchange_type": _answer(choice, confidence)} if choice else {}
+            response.choices = (
+                {"exchange_type": _answer(choice, confidence)} if choice else {}
+            )
             client.system_one.return_value = response
         with patch.object(router_module, "TypeSafeClient", return_value=client):
             doc._router_classify_and_dispatch()
@@ -163,10 +177,17 @@ class TestEdiImportRouter(BaseCommon):
     def test_email_intake_queues_job(self):
         with trap_jobs() as trap:
             doc = self.env["edi.import.router.document"].message_new(
-                {"subject": "Order", "body": "<p>x</p>", "email_from": "a@b.c", "message_id": "<1@x>"},
+                {
+                    "subject": "Order",
+                    "body": "<p>x</p>",
+                    "email_from": "a@b.c",
+                    "message_id": "<1@x>",
+                },
                 {"router_id": self.router.id},
             )
-        self.assertEqual((doc.source_type, doc.state, doc.name), ("email", "pending", "Order"))
+        self.assertEqual(
+            (doc.source_type, doc.state, doc.name), ("email", "pending", "Order")
+        )
         trap.assert_enqueued_job(doc._router_classify_and_dispatch, args=(), kwargs={})
 
     def test_print_intake_by_printer_user(self):
@@ -197,7 +218,9 @@ class TestEdiImportRouter(BaseCommon):
         email = self._email()
         self.assertEqual(email._router_offered_targets(), self.html_target)
         email_pdf = self._email(pdf=True)
-        self.assertEqual(email_pdf._router_offered_targets(), self.html_target | self.pdf_target)
+        self.assertEqual(
+            email_pdf._router_offered_targets(), self.html_target | self.pdf_target
+        )
         printed, _att = self._print()
         self.assertEqual(printed._router_offered_targets(), self.pdf_target)
         self.pdf_target.source_type = "email"
@@ -206,7 +229,9 @@ class TestEdiImportRouter(BaseCommon):
     def test_extraction_modes_by_source(self):
         # xberg parses HTML as readily as a PDF, so it reads both
         self.assertEqual((reads_body("html"), reads_pdf("html")), (True, False))
-        self.assertEqual((reads_body("plaintext"), reads_pdf("plaintext")), (True, False))
+        self.assertEqual(
+            (reads_body("plaintext"), reads_pdf("plaintext")), (True, False)
+        )
         self.assertEqual((reads_body("pypdf"), reads_pdf("pypdf")), (False, True))
         self.assertEqual((reads_body("xberg"), reads_pdf("xberg")), (True, True))
         self.assertEqual((reads_body(False), reads_pdf(False)), (False, False))
@@ -262,7 +287,9 @@ class TestEdiImportRouter(BaseCommon):
         doc = self._email(pdf=True)
         self._run(doc, "none", confidence=0.6)
         choices = {c.name: c for c in doc.choice_ids}
-        self.assertEqual(set(choices), {"router_html", "router_pdf", "None of these (ignore)"})
+        self.assertEqual(
+            set(choices), {"router_html", "router_pdf", "None of these (ignore)"}
+        )
         self.assertAlmostEqual(choices["None of these (ignore)"].probability, 0.6)
         self.assertEqual(doc.choice_ids[0].name, "None of these (ignore)")  # best first
         self.assertTrue(all(c.readable for c in doc.choice_ids))
@@ -272,7 +299,9 @@ class TestEdiImportRouter(BaseCommon):
         client = self._run(doc, "none", confidence=0.99)
         self.assertEqual(doc.state, "review")
         self.assertIn("router_pdf", doc.error_message)
-        criteria = client.system_one.call_args.kwargs["questions"]["exchange_type"].criteria
+        criteria = client.system_one.call_args.kwargs["questions"][
+            "exchange_type"
+        ].criteria
         self.assertNotIn(str(self.pdf_target.id), criteria)
         note = " ".join(doc.message_ids.mapped("body"))
         self.assertIn("Not offered to TypeSafe", note)
@@ -308,7 +337,9 @@ class TestEdiImportRouter(BaseCommon):
         doc = self._email()
         self._run(doc, str(self.html_target.id))
         with self.assertRaises(UserError):
-            doc.choice_ids.filtered(lambda c: c.target_id == self.html_target).action_route()
+            doc.choice_ids.filtered(
+                lambda c: c.target_id == self.html_target
+            ).action_route()
         with self.assertRaises(UserError):
             doc.action_reclassify()
 
@@ -333,7 +364,9 @@ class TestEdiImportRouter(BaseCommon):
         state = doc._router_typesafe_state()
         self.assertIn("parts-counter@supplier.example", state["original from"])
         self.assertEqual(state["from"], "a@b.c")
-        self.assertNotIn("original from", self._email(body="<p>x</p>")._router_typesafe_state())
+        self.assertNotIn(
+            "original from", self._email(body="<p>x</p>")._router_typesafe_state()
+        )
 
     def test_low_confidence_needs_review_with_activity(self):
         self.router.responsible_user_id = self.env.user
@@ -342,13 +375,17 @@ class TestEdiImportRouter(BaseCommon):
         self.assertEqual(doc.state, "review")
         self.assertTrue(doc.activity_ids)
 
+    @mute_logger("odoo.addons.edi_import_router.models.edi_import_router_document")
     def test_typesafe_error_needs_review(self):
         doc = self._email()
         self._run(doc, None, error=TypeSafeError("boom"))
         self.assertEqual((doc.state, doc.error_message), ("review", "boom"))
 
+    @mute_logger("odoo.addons.edi_import_router.models.edi_import_router_document")
     def test_missing_key_needs_review(self):
-        self.env["ir.config_parameter"].sudo().set_param("edi_import_router.typesafe_api_key", "")
+        self.env["ir.config_parameter"].sudo().set_param(
+            "edi_import_router.typesafe_api_key", ""
+        )
         doc = self._email()
         with patch.dict("os.environ", {}, clear=False) as env:
             env.pop("TYPESAFE_API_KEY", None)
@@ -356,6 +393,7 @@ class TestEdiImportRouter(BaseCommon):
         self.assertEqual(doc.state, "review")
         self.assertIn("API key", doc.error_message)
 
+    @mute_logger("odoo.addons.edi_import_router.models.edi_import_router_document")
     def test_pdf_target_without_pdf_needs_review_on_manual_dispatch(self):
         doc = self._email()
         doc.write({"state": "review", "target_id": self.pdf_target.id})

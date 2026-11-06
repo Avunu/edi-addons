@@ -14,8 +14,9 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
         "there is nothing for the base compute to auto-detect against.",
     )
 
+    # A compute returns nothing, so super() has no result to pass on.
     @api.depends("attachment_id", "pinned_template_id")
-    def _compute_template_id(self):
+    def _compute_template_id(self):  # pylint: disable=missing-return
         """Fall back to `pinned_template_id` for a line with no
         `attachment_id`.
 

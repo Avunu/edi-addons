@@ -17,13 +17,14 @@ dependencies = [
     # >>> odoo-nix: install set (managed from modules.txt) >>>
     "odoo",
     "packaging",
-    "odoo-addon-base_import_pdf_by_template",
-    "odoo-addon-queue_job",
-    "odoo-addon-edi_core_oca",
-    "typesafe_sdk",
-    "pypdf",
-    "jsonpath_ng",
-    "xberg",
+    "odoo-addon-base_import_pdf_by_template_engine",
+    "odoo-addon-edi_import_router",
+    "odoo-addon-edi_purchase_order_import",
+    "odoo-addon-import_create_missing",
+    "odoo-addon-import_create_missing_xberg",
+    "odoo-addon-import_from_email",
+    "odoo-addon-import_preview",
+    "odoo-addon-import_via_xberg",
     # <<< odoo-nix: install set <<<
 ]
 
@@ -32,13 +33,15 @@ dependencies = [
 # relock leaves this block alone.
 dev = [
     "debugpy",
-    "ruff",
     # Odoo's --dev=reload watcher needs a filesystem watcher it does not declare.
     "watchdog",
     # Odoo's test runner imports freezegun, and browser tours need
     # websocket-client (a missing one skips every tour silently).
     "freezegun",
     "websocket-client",
+    # The tests of the OCA EDI modules this repository depends on import it, and
+    # Odoo loads their test packages along with ours.
+    "odoo-test-helper",
 ]
 
 [tool.uv]
@@ -74,6 +77,7 @@ constraint-dependencies = ["setuptools<81"]
     "odoo-addon-base_import_async" = { path = "../.odoo-nix/modules/queue/base_import_async" }
     "odoo-addon-base_import_pdf_by_template" = { path = "../.odoo-nix/modules/edi/base_import_pdf_by_template" }
     "odoo-addon-base_import_pdf_by_template_account" = { path = "../.odoo-nix/modules/edi/base_import_pdf_by_template_account" }
+    "odoo-addon-base_import_pdf_by_template_engine" = { path = "../base_import_pdf_by_template_engine", editable = true }
     "odoo-addon-base_ubl" = { path = "../.odoo-nix/modules/edi/base_ubl" }
     "odoo-addon-base_ubl_generate" = { path = "../.odoo-nix/modules/edi/base_ubl_generate" }
     "odoo-addon-base_ubl_parse" = { path = "../.odoo-nix/modules/edi/base_ubl_parse" }
@@ -86,12 +90,14 @@ constraint-dependencies = ["setuptools<81"]
     "odoo-addon-edi_exchange_record_file_manager" = { path = "../.odoo-nix/modules/edi-framework/edi_exchange_record_file_manager" }
     "odoo-addon-edi_exchange_template_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_exchange_template_oca" }
     "odoo-addon-edi_exchange_template_party_data" = { path = "../.odoo-nix/modules/edi-framework/edi_exchange_template_party_data" }
+    "odoo-addon-edi_import_router" = { path = "../edi_import_router", editable = true }
     "odoo-addon-edi_notification_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_notification_oca" }
     "odoo-addon-edi_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_oca" }
     "odoo-addon-edi_party_data_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_party_data_oca" }
     "odoo-addon-edi_party_helper_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_party_helper_oca" }
     "odoo-addon-edi_product_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_product_oca" }
     "odoo-addon-edi_purchase_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_purchase_oca" }
+    "odoo-addon-edi_purchase_order_import" = { path = "../edi_purchase_order_import", editable = true }
     "odoo-addon-edi_purchase_ubl_output_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_purchase_ubl_output_oca" }
     "odoo-addon-edi_queue_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_queue_oca" }
     "odoo-addon-edi_record_metadata_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_record_metadata_oca" }
@@ -111,6 +117,11 @@ constraint-dependencies = ["setuptools<81"]
     "odoo-addon-edi_webservice_core_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_webservice_core_oca" }
     "odoo-addon-edi_webservice_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_webservice_oca" }
     "odoo-addon-edi_xml_oca" = { path = "../.odoo-nix/modules/edi-framework/edi_xml_oca" }
+    "odoo-addon-import_create_missing" = { path = "../import_create_missing", editable = true }
+    "odoo-addon-import_create_missing_xberg" = { path = "../import_create_missing_xberg", editable = true }
+    "odoo-addon-import_from_email" = { path = "../import_from_email", editable = true }
+    "odoo-addon-import_preview" = { path = "../import_preview", editable = true }
+    "odoo-addon-import_via_xberg" = { path = "../import_via_xberg", editable = true }
     "odoo-addon-partner_identification_import" = { path = "../.odoo-nix/modules/edi/partner_identification_import" }
     "odoo-addon-purchase_order_import" = { path = "../.odoo-nix/modules/edi/purchase_order_import" }
     "odoo-addon-purchase_order_import_ubl" = { path = "../.odoo-nix/modules/edi/purchase_order_import_ubl" }
@@ -148,11 +159,15 @@ packages = []
 # >>> odoo-nix: sdist build deps (managed) >>>
 "docopt" = ["setuptools"]
 "odoo" = ["setuptools"]
-"odoo-addon-base-import-pdf-by-template" = ["setuptools"]
-"odoo-addon-edi-core-oca" = ["setuptools"]
-"odoo-addon-queue-job" = ["setuptools"]
 "ofxparse" = ["setuptools"]
 "python-ldap" = ["setuptools"]
 "rjsmin" = ["setuptools"]
 "vobject" = ["setuptools"]
 # <<< odoo-nix: sdist build deps (managed) <<<
+
+[tool.odoo-nix]
+schema = 1
+profile = "github:Avunu/odoo-standards-profile/v1"
+
+[tool.odoo-nix.icons]
+src-icon = "assets/icons/edi-addons.png"

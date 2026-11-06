@@ -3,6 +3,7 @@
 import json
 
 from odoo.tests import tagged
+
 from odoo.addons.base.tests.common import BaseCommon
 
 _TAGS = ("post_install", "-at_install")
@@ -37,9 +38,7 @@ class TestJsonpathValues(BaseCommon):
             {
                 "name": "Create Missing Xberg Test Template",
                 "model_id": cls.env.ref("base.model_res_partner").id,
-                "child_field_id": cls.env.ref(
-                    "base.field_res_partner__child_ids"
-                ).id,
+                "child_field_id": cls.env.ref("base.field_res_partner__child_ids").id,
                 "extraction_mode": "xberg",
             }
         )
@@ -47,9 +46,7 @@ class TestJsonpathValues(BaseCommon):
             {
                 "template_id": cls.template.id,
                 "related_model": "lines",
-                "field_id": cls.env.ref(
-                    "base.field_res_partner__industry_id"
-                ).id,
+                "field_id": cls.env.ref("base.field_res_partner__industry_id").id,
                 "search_field_id": cls.env.ref(
                     "base.field_res_partner_industry__name"
                 ).id,
@@ -58,9 +55,7 @@ class TestJsonpathValues(BaseCommon):
                 "pattern": "(.+)",
             }
         )
-        cls.full_name_field = cls.env.ref(
-            "base.field_res_partner_industry__full_name"
-        )
+        cls.full_name_field = cls.env.ref("base.field_res_partner_industry__full_name")
         cls.text = json.dumps(_SAMPLE_DOCUMENT)
 
     def _make_create_value(self, **kwargs):
@@ -115,9 +110,9 @@ class TestJsonpathValues(BaseCommon):
         table_info = self.template.with_context(
             import_create_missing=True
         )._get_table_info(self.text)
-        self.template.with_context(
-            import_create_missing=True
-        )._get_field_child_values(table_info)
+        self.template.with_context(import_create_missing=True)._get_field_child_values(
+            table_info
+        )
         oak = self.env["res.partner.industry"].search([("name", "=", "Oak")])
         self.assertTrue(oak)
         self.assertEqual(oak.full_name, "Great oak wood")
@@ -144,9 +139,7 @@ class TestJsonpathValues(BaseCommon):
             xberg_jsonpath="$.tables[0].cellsByHeader[*].Description",
             pattern=r"^(\w+)",
         )
-        self.assertFalse(
-            "No JSONPath" in (self.line.create_missing_warning or "")
-        )
+        self.assertFalse("No JSONPath" in (self.line.create_missing_warning or ""))
 
     def test_warning_names_a_nested_row_with_its_parent(self):
         bank_row = self.env["base.import.pdf.template.line.create.value"].create(
@@ -160,9 +153,7 @@ class TestJsonpathValues(BaseCommon):
             {
                 "line_id": self.line.id,
                 "parent_id": bank_row.id,
-                "field_id": self.env.ref(
-                    "base.field_res_partner_bank__acc_number"
-                ).id,
+                "field_id": self.env.ref("base.field_res_partner_bank__acc_number").id,
                 "value_type": "variable",
                 "pattern": r"(\d+)",
             }

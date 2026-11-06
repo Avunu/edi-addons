@@ -1,11 +1,11 @@
 // Copyright 2026 Avunu LLC (avu.nu)
 // License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 
-import { _t } from "@web/core/l10n/translation";
-import { registry } from "@web/core/registry";
-import { TextField, textField } from "@web/views/fields/text/text_field";
+import {TextField, textField} from "@web/views/fields/text/text_field";
+import {_t} from "@web/core/l10n/translation";
+import {registry} from "@web/core/registry";
 
-import { useEffect } from "@odoo/owl";
+import {useEffect} from "@odoo/owl";
 
 /*
  * Vendored (microlighter 2.1.0, MIT - see static/lib/microlighter/). A tiny,

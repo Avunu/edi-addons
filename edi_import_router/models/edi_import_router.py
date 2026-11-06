@@ -76,7 +76,7 @@ class EdiImportRouter(models.Model):
         for router in self:
             router.printer_setup = (
                 "Odoo model: ir.attachment | Attach to model: "
-                "edi.import.router | Attach to record ID: %s" % router.id
+                f"edi.import.router | Attach to record ID: {router.id}"
                 if router.id
                 else False
             )

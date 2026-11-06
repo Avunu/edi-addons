@@ -2,6 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 import asyncio
 import base64
+import contextlib
 import enum
 import json
 import logging
@@ -53,7 +54,7 @@ def _to_jsonable(obj, _seen=None, _depth=0):
     """
     if _seen is None:
         _seen = set()
-    if obj is None or isinstance(obj, (str, int, float, bool)):
+    if obj is None or isinstance(obj, str | int | float | bool):
         return obj
     if isinstance(obj, bytes):
         return None
@@ -61,14 +62,12 @@ def _to_jsonable(obj, _seen=None, _depth=0):
         return obj.name
     if _depth >= _TO_JSONABLE_MAX_DEPTH:
         return None
-    if isinstance(obj, (list, tuple, set)):
+    if isinstance(obj, list | tuple | set):
         return [_to_jsonable(v, _seen, _depth + 1) for v in obj]
     if isinstance(obj, dict):
         return {str(k): _to_jsonable(v, _seen, _depth + 1) for k, v in obj.items()}
-    try:
+    with contextlib.suppress(TypeError, ValueError):
         return json.loads(repr(obj))
-    except (TypeError, ValueError):
-        pass
     oid = id(obj)
     if oid in _seen:
         return None
@@ -202,9 +201,7 @@ class WizardBaseImportPdfMixin(models.AbstractModel):
             # loop, and Odoo's threaded workers never run one of their own.
             result = asyncio.run(xberg.extract(extract_input))
             if result.errors:
-                raise xberg.XbergError(
-                    "; ".join(e.message for e in result.errors)
-                )
+                raise xberg.XbergError("; ".join(e.message for e in result.errors))
             document = result.results[0]
             document_json = _add_table_cell_views(_to_jsonable(document))
             res = [json.dumps(document_json)]

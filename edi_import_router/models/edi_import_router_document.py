@@ -108,7 +108,7 @@ class EdiImportRouterDocument(models.Model):
     def _compute_routed_record(self):
         for doc in self:
             record = doc.exchange_record_id.record
-            doc.routed_record = "%s,%s" % (record._name, record.id) if record else False
+            doc.routed_record = f"{record._name},{record.id}" if record else False
 
     # ------------------------------------------------------------
     # Intake
@@ -150,8 +150,9 @@ class EdiImportRouterDocument(models.Model):
                 [("router_id", "=", router.id), ("checksum", "=", attachment.checksum)],
                 limit=1,
             )
-            state, note = "ignored", _(
-                "Duplicate of %s: same file contents.", original.display_name
+            state, note = (
+                "ignored",
+                _("Duplicate of %s: same file contents.", original.display_name),
             )
         else:
             state, note = "pending", False
@@ -166,7 +167,9 @@ class EdiImportRouterDocument(models.Model):
             }
         )
         attachment.write({"res_model": self._name, "res_id": doc.id})
-        doc.message_post(body=note or _("Printed document received."), attachment_ids=attachment.ids)
+        doc.message_post(
+            body=note or _("Printed document received."), attachment_ids=attachment.ids
+        )
         if state == "pending":
             doc._router_enqueue()
         return doc
@@ -184,16 +187,20 @@ class EdiImportRouterDocument(models.Model):
     # ------------------------------------------------------------
 
     def _router_pdf(self):
-        """The first PDF on this document (the print itself, or an email's attachment)."""
+        """The first PDF on this document (the print, or an email's attachment)."""
         self.ensure_one()
-        return self.env["ir.attachment"].sudo().search(
-            [
-                ("res_model", "=", self._name),
-                ("res_id", "=", self.id),
-                ("mimetype", "=", "application/pdf"),
-            ],
-            order="id",
-            limit=1,
+        return (
+            self.env["ir.attachment"]
+            .sudo()
+            .search(
+                [
+                    ("res_model", "=", self._name),
+                    ("res_id", "=", self.id),
+                    ("mimetype", "=", "application/pdf"),
+                ],
+                order="id",
+                limit=1,
+            )
         )
 
     def _router_pdf_text(self, attachment):
@@ -359,8 +366,7 @@ class EdiImportRouterDocument(models.Model):
                 body=_(
                     "Not offered to TypeSafe: %s.",
                     "; ".join(
-                        "%s (%s)"
-                        % (t.exchange_type_id.name, self._router_skip_reason(t))
+                        f"{t.exchange_type_id.name} ({self._router_skip_reason(t)})"
                         for t in unreadable
                     ),
                 )
@@ -415,9 +421,9 @@ class EdiImportRouterDocument(models.Model):
             return self._router_set_review(
                 _(
                     "TypeSafe thinks this is not one of the targets, but only "
-                    "%.0f%% sure (ignoring needs %.0f%%).",
-                    answer.confidence * 100,
-                    router.ignore_threshold * 100,
+                    "%(confidence).0f%% sure (ignoring needs %(threshold).0f%%).",
+                    confidence=answer.confidence * 100,
+                    threshold=router.ignore_threshold * 100,
                 )
             )
         if answer.confidence < router.confidence_threshold:

@@ -1,0 +1,20 @@
+[project]
+name = "edi-addons-tools"
+version = "0"
+requires-python = ">=3.11"
+dependencies = ["prek==0.5.7", "ruff==0.6.8", "pylint-odoo==9.1.3", "oca-odoo-pre-commit-hooks==0.0.33", "pre-commit-hooks==4.6.0", "oca-maintainers-tools @ git+https://github.com/oca/maintainer-tools@31bdbd8e4cb94be6534f0e82b1cafb84a455f671", "manifestoo==1.2", "whool==1.3", "coverage==7.16.2", "checklog-odoo==1.0"]
+
+[tool.uv]
+package = false
+
+[tool.coverage.run]
+source = ["."]
+branch = true
+parallel = true
+data_file = ".odoo-nix/coverage/.coverage"
+omit = [".odoo-nix/*", "*/tests/*", "*/migrations/*", "*/upgrades/*", "*/__manifest__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 0

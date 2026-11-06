@@ -11,6 +11,7 @@ import re
 # full load the field and its default exist and create works normally - the
 # same convention a downstream supplier-lookup module's own tests use.
 from odoo.tests import tagged
+
 from odoo.addons.base.tests.common import BaseCommon
 
 

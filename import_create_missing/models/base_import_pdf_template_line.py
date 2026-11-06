@@ -229,7 +229,7 @@ class BaseImportPdfTemplateLine(models.Model):
                 else ()
             )
             stale = line._top_level_create_values().filtered(
-                lambda row: row.field_id
+                lambda row, candidates=candidates: row.field_id
                 and row.field_id.model_id.model not in candidates
             )
             if stale:
@@ -297,7 +297,9 @@ class BaseImportPdfTemplateLine(models.Model):
                     }
                 )
         except Exception:
-            _logger.exception("import_create_missing: failed to write an ir.logging entry")
+            _logger.exception(
+                "import_create_missing: failed to write an ir.logging entry"
+            )
 
     def _get_record_search_from_value(self, value):
         record = super()._get_record_search_from_value(value)

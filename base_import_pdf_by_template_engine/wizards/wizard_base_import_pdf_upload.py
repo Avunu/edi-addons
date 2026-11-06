@@ -118,7 +118,7 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
                 if not value:
                     continue
                 value = value.display_name
-            elif isinstance(value, (list, tuple)):
+            elif isinstance(value, list | tuple):
                 continue
             elif value in (False, None, ""):
                 continue
@@ -150,6 +150,8 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
         summary = self._row_summary(values)
         if summary:
             lines.append(self.env._("Row data: %s", summary))
+        # Returns None only in this base: bridge modules override it.
+        # pylint: disable-next=assignment-from-none
         hint = self._child_line_error_hint(template, values)
         if hint:
             lines.append(hint)
@@ -258,9 +260,7 @@ class WizardBaseImportPdfUploadLine(models.TransientModel):
             return {d.split(".")[0] for d in depends if d}
 
         plain = [
-            (name, value)
-            for name, value in values.items()
-            if not is_clobberable(name)
+            (name, value) for name, value in values.items() if not is_clobberable(name)
         ]
         remaining = [name for name, _ in values.items() if is_clobberable(name)]
         ordered = list(plain)

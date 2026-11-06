@@ -50,9 +50,7 @@ class EdiExchangeRecord(models.Model):
             )
         backend = self.env["edi.backend"].browse(backend_id).exists()
         if not backend:
-            raise UserError(
-                self.env._("EDI backend #%s does not exist.", backend_id)
-            )
+            raise UserError(self.env._("EDI backend #%s does not exist.", backend_id))
         # Let the backend resolve `type_code` itself (`create_record()` ->
         # `_get_exchange_type_domain()`): it already knows how to match a
         # type pinned to this exact backend as well as one shared across

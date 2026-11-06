@@ -9,10 +9,13 @@ field by its real label, which `edi_backend.exchange_process()`'s own
 `_swallable_exceptions()` already knows how to turn into a clean state +
 message + notification - see `wizards/wizard_base_import_pdf_upload.py`.
 """
+
 from unittest import mock
 
 from odoo.exceptions import UserError
 from odoo.tests import tagged
+from odoo.tools import mute_logger
+
 from odoo.addons.base.tests.common import BaseCommon
 
 # post_install, not at_install - same reason as this module's other tests:
@@ -162,6 +165,9 @@ class TestUnexpectedErrorReporting(BaseCommon):
             }
         )
 
+    @mute_logger(
+        "odoo.addons.base_import_pdf_by_template_engine.wizards.wizard_base_import_pdf_upload",
+    )
     def test_unexpected_exception_becomes_a_usererror(self):
         line = self.env["wizard.base.import.pdf.upload.line"].create({})
         line.write({"template_id": self.template.id, "data": "irrelevant\n"})

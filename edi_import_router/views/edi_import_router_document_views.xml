@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <record id="edi_import_router_document_view_form" model="ir.ui.view">
         <field name="name">edi.import.router.document.form</field>
@@ -6,52 +6,95 @@
         <field name="arch" type="xml">
             <form create="0">
                 <header>
-                    <button name="action_dispatch" type="object" string="Dispatch" class="btn-primary"
-                            invisible="state not in ('review', 'error') or not target_id"/>
-                    <button name="action_reclassify" type="object" string="Re-classify"
-                            invisible="state in ('pending', 'routed')"/>
-                    <button name="action_ignore" type="object" string="Ignore"
-                            invisible="state in ('routed', 'ignored')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="pending,review,routed"/>
+                    <button
+                        name="action_dispatch"
+                        type="object"
+                        string="Dispatch"
+                        class="btn-primary"
+                        invisible="state not in ('review', 'error') or not target_id"
+                    />
+                    <button
+                        name="action_reclassify"
+                        type="object"
+                        string="Re-classify"
+                        invisible="state in ('pending', 'routed')"
+                    />
+                    <button
+                        name="action_ignore"
+                        type="object"
+                        string="Ignore"
+                        invisible="state in ('routed', 'ignored')"
+                    />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="pending,review,routed"
+                    />
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
-                            <field name="router_id"/>
-                            <field name="source_type"/>
-                            <field name="email_from" invisible="source_type != 'email'"/>
-                            <field name="print_source" invisible="source_type != 'print'"/>
+                            <field name="name" />
+                            <field name="router_id" />
+                            <field name="source_type" />
+                            <field
+                                name="email_from"
+                                invisible="source_type != 'email'"
+                            />
+                            <field
+                                name="print_source"
+                                invisible="source_type != 'print'"
+                            />
                         </group>
                         <group>
-                            <field name="target_id" domain="[('router_id', '=', router_id)]"
-                                   readonly="state in ('routed', 'ignored')"/>
-                            <field name="confidence" widget="percentage"/>
-                            <field name="exchange_record_id"/>
-                            <field name="routed_record"/>
+                            <field
+                                name="target_id"
+                                domain="[('router_id', '=', router_id)]"
+                                readonly="state in ('routed', 'ignored')"
+                            />
+                            <field name="confidence" widget="percentage" />
+                            <field name="exchange_record_id" />
+                            <field name="routed_record" />
                         </group>
                     </group>
                     <group invisible="not error_message">
-                        <field name="error_message"/>
+                        <field name="error_message" />
                     </group>
-                    <group string="TypeSafe's answer: route by hand" invisible="not choice_ids">
+                    <group
+                        string="TypeSafe's answer: route by hand"
+                        invisible="not choice_ids"
+                    >
                         <field name="choice_ids" nolabel="1" colspan="2" readonly="1">
-                            <list create="0" delete="0" no_open="1" decoration-muted="not readable">
-                                <field name="name"/>
-                                <field name="probability" widget="percentage"/>
-                                <field name="note"/>
-                                <field name="readable" column_invisible="1"/>
-                                <field name="is_none" column_invisible="1"/>
-                                <field name="document_state" column_invisible="1"/>
-                                <button name="action_route" type="object" string="Route here" class="btn-primary"
-                                        invisible="is_none or not readable or document_state == 'routed'"/>
-                                <button name="action_route" type="object" string="Ignore"
-                                        invisible="not is_none or document_state in ('routed', 'ignored')"/>
+                            <list
+                                create="0"
+                                delete="0"
+                                no_open="1"
+                                decoration-muted="not readable"
+                            >
+                                <field name="name" />
+                                <field name="probability" widget="percentage" />
+                                <field name="note" />
+                                <field name="readable" column_invisible="1" />
+                                <field name="is_none" column_invisible="1" />
+                                <field name="document_state" column_invisible="1" />
+                                <button
+                                    name="action_route"
+                                    type="object"
+                                    string="Route here"
+                                    class="btn-primary"
+                                    invisible="is_none or not readable or document_state == 'routed'"
+                                />
+                                <button
+                                    name="action_route"
+                                    type="object"
+                                    string="Ignore"
+                                    invisible="not is_none or document_state in ('routed', 'ignored')"
+                                />
                             </list>
                         </field>
                     </group>
                 </sheet>
-                <chatter/>
+                <chatter />
             </form>
         </field>
     </record>
@@ -60,14 +103,18 @@
         <field name="name">edi.import.router.document.list</field>
         <field name="model">edi.import.router.document</field>
         <field name="arch" type="xml">
-            <list create="0" decoration-warning="state == 'review'" decoration-muted="state == 'ignored'">
-                <field name="create_date"/>
-                <field name="name"/>
-                <field name="source_type"/>
-                <field name="router_id"/>
-                <field name="target_id"/>
-                <field name="confidence" widget="percentage"/>
-                <field name="state" widget="badge"/>
+            <list
+                create="0"
+                decoration-warning="state == 'review'"
+                decoration-muted="state == 'ignored'"
+            >
+                <field name="create_date" />
+                <field name="name" />
+                <field name="source_type" />
+                <field name="router_id" />
+                <field name="target_id" />
+                <field name="confidence" widget="percentage" />
+                <field name="state" widget="badge" />
             </list>
         </field>
     </record>
@@ -77,17 +124,45 @@
         <field name="model">edi.import.router.document</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name"/>
-                <field name="email_from"/>
-                <filter name="needs_review" string="Needs review" domain="[('state', 'in', ('review', 'error'))]"/>
-                <filter name="routed" string="Routed" domain="[('state', '=', 'routed')]"/>
-                <filter name="ignored" string="Ignored" domain="[('state', '=', 'ignored')]"/>
-                <separator/>
-                <filter name="email" string="Email" domain="[('source_type', '=', 'email')]"/>
-                <filter name="print" string="Printer" domain="[('source_type', '=', 'print')]"/>
+                <field name="name" />
+                <field name="email_from" />
+                <filter
+                    name="needs_review"
+                    string="Needs review"
+                    domain="[('state', 'in', ('review', 'error'))]"
+                />
+                <filter
+                    name="routed"
+                    string="Routed"
+                    domain="[('state', '=', 'routed')]"
+                />
+                <filter
+                    name="ignored"
+                    string="Ignored"
+                    domain="[('state', '=', 'ignored')]"
+                />
+                <separator />
+                <filter
+                    name="email"
+                    string="Email"
+                    domain="[('source_type', '=', 'email')]"
+                />
+                <filter
+                    name="print"
+                    string="Printer"
+                    domain="[('source_type', '=', 'print')]"
+                />
                 <group expand="0">
-                    <filter name="group_router" string="Router" context="{'group_by': 'router_id'}"/>
-                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter
+                        name="group_router"
+                        string="Router"
+                        context="{'group_by': 'router_id'}"
+                    />
+                    <filter
+                        name="group_state"
+                        string="Status"
+                        context="{'group_by': 'state'}"
+                    />
                 </group>
             </search>
         </field>

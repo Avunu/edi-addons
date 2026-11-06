@@ -24,7 +24,7 @@ Every other module here depends on `base_import_pdf_by_template_engine`, directl
 | --- | --- | --- |
 | `edi_purchase_order_import` | Confirms a purchase order as soon as `import_from_email`'s template processor creates it from an inbound document, and notifies a group chosen in the Purchase settings | AGPL-3.0-or-later |
 
-Each module's README explains why it exists and how it works. `edi_purchase_order_import` has no README yet. It extends the generic processor (`edi.input.process.template`) from `import_from_email`: when the record an exchange creates is a purchase order, a draft order is confirmed, and a message posted on it notifies every user of the chosen group, so it appears in their inbox. The group is set in Settings > Purchase (*Notify Group on Imported Purchase Orders*), is kept in the `edi_purchase_order_import.notify_group_id` system parameter, and defaults to the Purchase Administrator group.
+Each module's README explains why it exists and how it works.
 
 ## Branches
 

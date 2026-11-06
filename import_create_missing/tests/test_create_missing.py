@@ -3,6 +3,8 @@
 from unittest import mock
 
 from odoo.tests import tagged
+from odoo.tools import mute_logger
+
 from odoo.addons.base.tests.common import BaseCommon
 
 # post_install, not at_install - see the identical convention (and full
@@ -40,15 +42,11 @@ class TestCreateMissing(BaseCommon):
             {
                 "name": "Create Missing Test Template",
                 "model_id": cls.env.ref("base.model_res_partner").id,
-                "child_field_id": cls.env.ref(
-                    "base.field_res_partner__child_ids"
-                ).id,
+                "child_field_id": cls.env.ref("base.field_res_partner__child_ids").id,
             }
         )
         cls.industry_field = cls.env.ref("base.field_res_partner__industry_id")
-        cls.industry_name_field = cls.env.ref(
-            "base.field_res_partner_industry__name"
-        )
+        cls.industry_name_field = cls.env.ref("base.field_res_partner_industry__name")
         cls.industry_full_name_field = cls.env.ref(
             "base.field_res_partner_industry__full_name"
         )
@@ -104,23 +102,23 @@ class TestCreateMissing(BaseCommon):
         table_info = self.template.with_context(
             import_create_missing=True
         )._get_table_info(text)
-        self.template.with_context(
-            import_create_missing=True
-        )._get_field_child_values(table_info)
+        self.template.with_context(import_create_missing=True)._get_field_child_values(
+            table_info
+        )
         industry = self.Industry.search([("name", "=", "Ceramics")])
         self.assertTrue(industry)
         self.assertEqual(industry.full_name, "Always This")
 
     def test_repeated_value_creates_once(self):
-        line = self._make_line(pattern=r"Row: (\w+)\n")
+        self._make_line(pattern=r"Row: (\w+)\n")
         text = "Row: Glassblowing\nRow: Glassblowing\n"
         before = self.Industry.search_count([("name", "=", "Glassblowing")])
         table_info = self.template.with_context(
             import_create_missing=True
         )._get_table_info(text)
-        self.template.with_context(
-            import_create_missing=True
-        )._get_field_child_values(table_info)
+        self.template.with_context(import_create_missing=True)._get_field_child_values(
+            table_info
+        )
         after = self.Industry.search_count([("name", "=", "Glassblowing")])
         self.assertEqual(after - before, 1)
 
@@ -185,15 +183,15 @@ class TestCreateMissing(BaseCommon):
             import_create_missing=True
         )._get_table_info(text)
         self.assertEqual(len(table_info["data"]), 2)
-        self.template.with_context(
-            import_create_missing=True
-        )._get_field_child_values(table_info)
+        self.template.with_context(import_create_missing=True)._get_field_child_values(
+            table_info
+        )
         industry = self.Industry.search([("name", "=", "Weaving")])
         self.assertTrue(industry)
         self.assertEqual(industry.full_name, "WeavingFull")
 
     def test_no_creation_outside_a_real_import(self):
-        line = self._make_line(pattern=r"Row: (\w+)\n")
+        self._make_line(pattern=r"Row: (\w+)\n")
         text = "Row: Leatherworking\n"
         # No `import_create_missing` context flag - same as a template
         # preview or the preview wizard.
@@ -202,14 +200,14 @@ class TestCreateMissing(BaseCommon):
         self.assertFalse(self.Industry.search([("name", "=", "Leatherworking")]))
 
     def test_create_missing_off_is_inert(self):
-        line = self._make_line(pattern=r"Row: (\w+)\n", create_missing=False)
+        self._make_line(pattern=r"Row: (\w+)\n", create_missing=False)
         text = "Row: Blacksmithing\n"
         table_info = self.template.with_context(
             import_create_missing=True
         )._get_table_info(text)
-        self.template.with_context(
-            import_create_missing=True
-        )._get_field_child_values(table_info)
+        self.template.with_context(import_create_missing=True)._get_field_child_values(
+            table_info
+        )
         self.assertFalse(self.Industry.search([("name", "=", "Blacksmithing")]))
 
     def test_header_line_creates_missing_record(self):
@@ -241,6 +239,9 @@ class TestCreateMissing(BaseCommon):
         self.assertEqual(industry.full_name, "UpholsteryFull")
         self.assertEqual(header_values["industry_id"], industry)
 
+    @mute_logger(
+        "odoo.addons.import_create_missing.models.base_import_pdf_template_line",
+    )
     def test_create_failure_falls_through_without_raising(self):
         line = self._make_line(pattern=r"Row: (\w+)\n")
         # `_get_record_search_from_value()` is the method

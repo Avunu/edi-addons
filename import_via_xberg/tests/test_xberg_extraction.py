@@ -5,6 +5,7 @@ from base64 import b64encode
 from os import path
 
 from odoo.exceptions import UserError
+from odoo.tools import mute_logger
 
 from odoo.addons.base.tests.common import BaseCommon
 
@@ -73,12 +74,15 @@ class TestXbergExtraction(BaseCommon):
         use it - and must resume trying it once a template does.
         """
         model = self.env["ir.model"]._get("res.partner")
+        # `base_import_pdf_by_template`'s demo data has a res.partner template,
+        # and this test starts from an instance with none.
+        self.env["base.import.pdf.template"].search(
+            [("model_id", "=", model.id)]
+        ).write({"active": False})
         attachment = self.env["ir.attachment"].create(
             {
                 "name": "sample_parts_invoice.pdf",
-                "datas": b64encode(
-                    self._data_file("sample_parts_invoice.pdf")
-                ),
+                "datas": b64encode(self._data_file("sample_parts_invoice.pdf")),
             }
         )
         upload = self.env["wizard.base.import.pdf.upload"].create(
@@ -136,6 +140,7 @@ class TestXbergExtraction(BaseCommon):
         # own config, not replaced by it
         self.assertIn("timeout_secs", config)
 
+    @mute_logger("odoo.addons.import_via_xberg.wizards.wizard_base_import_pdf_mixin")
     def test_xberg_extraction_with_invalid_config_json_fails_gracefully(self):
         """A malformed `xberg_config` must surface as the base module's
         standard "could not extract" UserError, like any other extraction

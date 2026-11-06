@@ -7,6 +7,7 @@ The work itself lives on the model
 rather than here, so it can be exercised by the test suite - a migration
 script is unreachable from a test run.
 """
+
 from odoo import SUPERUSER_ID, api
 
 

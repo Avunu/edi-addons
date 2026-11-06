@@ -2,8 +2,8 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 from base64 import b64encode
 
-from odoo.modules.module import get_module_resource
 from odoo.tests import Form
+from odoo.tools.misc import file_path
 
 from odoo.addons.base.tests.common import BaseCommon
 
@@ -106,9 +106,7 @@ class TestPreview(BaseCommon):
             self.assertIn("Bob", line_form.preview_result)
 
     def test_sample_file_onchange_fills_sample_data(self):
-        pdf_path = get_module_resource(
-            "base_import_pdf_by_template", "tests", "data", "res-partner.pdf"
-        )
+        pdf_path = file_path("base_import_pdf_by_template/tests/data/res-partner.pdf")
         with open(pdf_path, "rb") as f:
             pdf_data = b64encode(f.read())
         template_form = Form(self.env["base.import.pdf.template"])

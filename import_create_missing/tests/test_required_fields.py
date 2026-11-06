@@ -3,9 +3,10 @@
 """Auto-population of New Document Values from the target model's own
 required fields, the typed `Fixed` values that carry Odoo's defaults, and
 the advisory "still missing" reporting built on both."""
-from odoo.tests import tagged
-from odoo.addons.base.tests.common import BaseCommon
 
+from odoo.tests import tagged
+
+from odoo.addons.base.tests.common import BaseCommon
 from odoo.addons.import_create_missing.models.create_field_spec import (
     fixed_value_kind,
     required_field_names,
@@ -24,7 +25,9 @@ class TestRequiredFieldSpecs(BaseCommon):
     Odoo would default."""
 
     def test_required_specs_for_res_users(self):
-        specs = {spec.name: spec for spec in required_field_specs(self.env["res.users"])}
+        specs = {
+            spec.name: spec for spec in required_field_specs(self.env["res.users"])
+        }
         # Owned by res.users itself, required, nothing defaults it.
         self.assertIn("login", specs)
         self.assertFalse(specs["login"].has_default)
@@ -110,9 +113,7 @@ class TestRequiredCreateValues(BaseCommon):
     def _rows(self, line=None):
         line = line if line is not None else self.name_line
         return {
-            row.field_name: row
-            for row in line.create_value_ids
-            if not row.parent_id
+            row.field_name: row for row in line.create_value_ids if not row.parent_id
         }
 
     def test_action_adds_required_rows(self):
@@ -340,9 +341,7 @@ class TestTypedFixedValues(BaseCommon):
             "base.field_res_partner__is_company", fixed_value="true"
         )
         integer_row = self._row("base.field_res_partner__color", fixed_value="7")
-        selection_row = self._row(
-            "base.field_res_partner__type", fixed_value="invoice"
-        )
+        selection_row = self._row("base.field_res_partner__type", fixed_value="invoice")
         char_row = self._row("base.field_res_partner__ref", fixed_value="ABC")
         self.CreateValue._migrate_legacy_fixed_value()
         self.assertTrue(boolean_row.fixed_value_boolean)
@@ -375,7 +374,8 @@ class TestProductRequiredFields(BaseCommon):
         if "product.product" not in self.env:
             self.skipTest("product is not installed")
         specs = {
-            spec.name: spec for spec in required_field_specs(self.env["product.product"])
+            spec.name: spec
+            for spec in required_field_specs(self.env["product.product"])
         }
         # Delegated from product.template, no default - the one field the
         # user genuinely has to map.
@@ -482,9 +482,7 @@ class TestVendorsAlwaysOffered(BaseCommon):
         # The inverse is set by the one2many command itself.
         self.assertNotIn("product_tmpl_id", children)
         # Nested rows stay nested - not in the top-level table.
-        self.assertFalse(
-            self.line.create_value_ids & vendors.child_value_ids
-        )
+        self.assertFalse(self.line.create_value_ids & vendors.child_value_ids)
         self.assertIn("Vendor", self.line.create_missing_warning)
 
     def test_button_restores_deleted_vendor_and_leaves_rows_alone(self):
@@ -534,9 +532,7 @@ class TestChildLineErrorHint(BaseCommon):
             {
                 "template_id": self.template.id,
                 "related_model": "lines",
-                "field_id": self.env.ref(
-                    "base.field_res_partner_bank__partner_id"
-                ).id,
+                "field_id": self.env.ref("base.field_res_partner_bank__partner_id").id,
                 "search_field_id": self.env.ref("base.field_res_partner__name").id,
                 "create_missing": True,
                 "pattern": r"Vendor: (.+)\n",

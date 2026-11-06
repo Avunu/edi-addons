@@ -132,7 +132,9 @@ class BaseImportPdfTemplate(models.Model):
                 res_line = self.with_context(
                     **{
                         CREATE_MISSING_VALUES_KEY: row_values,
-                        CREATE_MISSING_TEXT_KEY: table_info.get(CREATE_MISSING_TEXT_KEY),
+                        CREATE_MISSING_TEXT_KEY: table_info.get(
+                            CREATE_MISSING_TEXT_KEY
+                        ),
                     }
                 )._get_field_values_from_table_item(data_line)
                 if res_line:

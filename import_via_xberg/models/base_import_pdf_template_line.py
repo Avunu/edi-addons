@@ -95,9 +95,7 @@ class BaseImportPdfTemplateLine(models.Model):
     def _jsonpath_matches(self, jsonpath_expr, text):
         self.ensure_one()
         if _jsonpath_parse is None:
-            raise UserError(
-                self.env._("The `jsonpath-ng` library is not installed.")
-            )
+            raise UserError(self.env._("The `jsonpath-ng` library is not installed."))
         return _compile_jsonpath(jsonpath_expr).find(_parse_document(text))
 
     @api.model
@@ -111,7 +109,7 @@ class BaseImportPdfTemplateLine(models.Model):
             return value.strip()
         if value is None or isinstance(value, bool):
             return ""
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return str(value)
         return json.dumps(value)  # list/dict: keep it inspectable rather than opaque
 
@@ -170,7 +168,9 @@ class BaseImportPdfTemplateLine(models.Model):
         if self.extraction_mode != "xberg" or not self.xberg_jsonpath:
             return False
         template_fields = self.template_id._fields
-        sample = self.template_id.sample_data if "sample_data" in template_fields else False
+        sample = (
+            self.template_id.sample_data if "sample_data" in template_fields else False
+        )
         if not sample:
             return self.env._(
                 "Add a sample document on the template's Sample Data tab "
@@ -184,7 +184,9 @@ class BaseImportPdfTemplateLine(models.Model):
             rows.append(f"{index:>3}. {self._jsonpath_to_text(match.value)!r}")
         if len(matches) > _JSONPATH_PREVIEW_MAX_MATCHES:
             rows.append(
-                self.env._("… and %s more", len(matches) - _JSONPATH_PREVIEW_MAX_MATCHES)
+                self.env._(
+                    "… and %s more", len(matches) - _JSONPATH_PREVIEW_MAX_MATCHES
+                )
             )
         return "\n".join(rows)[:_JSONPATH_PREVIEW_MAX_CHARS]
 

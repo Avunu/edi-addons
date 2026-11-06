@@ -3,7 +3,6 @@
 import json
 
 from odoo.addons.base.tests.common import BaseCommon
-
 from odoo.addons.import_via_xberg.models.base_import_pdf_template_line import (
     _unescape_jsonpath_whitespace,
 )
@@ -176,9 +175,7 @@ class TestXbergJsonpathNarrowing(BaseCommon):
             xberg_jsonpath="$.should.never.be.evaluated",
             pattern=r"Partner Name: (.+)",
         )
-        self.assertEqual(
-            line._get_field_value("Partner Name: Acme Corp"), "Acme Corp"
-        )
+        self.assertEqual(line._get_field_value("Partner Name: Acme Corp"), "Acme Corp")
 
 
 class TestXbergJsonpathPreview(BaseCommon):

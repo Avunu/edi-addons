@@ -519,9 +519,7 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 vals["value_type"] = "odoo_default"
         elif kind == "char":
             vals["fixed_value"] = (
-                json.dumps(spec.default)
-                if spec.ttype == "json"
-                else str(spec.default)
+                json.dumps(spec.default) if spec.ttype == "json" else str(spec.default)
             )
         else:
             vals[FIXED_VALUE_FIELD[kind]] = spec.default
@@ -905,8 +903,7 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 return json.loads(value)
             except ValueError:
                 _logger.warning(
-                    "New Document Values row %s: %r is not valid JSON for "
-                    "field %s.",
+                    "New Document Values row %s: %r is not valid JSON for " "field %s.",
                     self.id,
                     value,
                     self.field_name,
@@ -950,7 +947,9 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 except ValueError:
                     _logger.warning(
                         "New Document Values row %s: cannot migrate %r to an "
-                        "integer value; left as text.", row.id, raw
+                        "integer value; left as text.",
+                        row.id,
+                        raw,
                     )
                     continue
             elif kind == "float":
@@ -959,7 +958,9 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 except ValueError:
                     _logger.warning(
                         "New Document Values row %s: cannot migrate %r to a "
-                        "float value; left as text.", row.id, raw
+                        "float value; left as text.",
+                        row.id,
+                        raw,
                     )
                     continue
             elif kind == "selection":
@@ -974,7 +975,10 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 if not option:
                     _logger.warning(
                         "New Document Values row %s: %r is not an option of "
-                        "%s; left as text.", row.id, raw, row.field_name
+                        "%s; left as text.",
+                        row.id,
+                        raw,
+                        row.field_name,
                     )
                     continue
                 vals["fixed_value_selection_id"] = option.id
@@ -985,7 +989,10 @@ class BaseImportPdfTemplateLineCreateValue(models.Model):
                 except ValueError:
                     _logger.warning(
                         "New Document Values row %s: cannot migrate %r to a "
-                        "%s value; left as text.", row.id, raw, kind
+                        "%s value; left as text.",
+                        row.id,
+                        raw,
+                        kind,
                     )
                     continue
             vals["fixed_value"] = False

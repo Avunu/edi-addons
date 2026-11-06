@@ -89,9 +89,7 @@ class BaseImportPdfTemplate(models.Model):
                 wizard = self.env["wizard.base.import.pdf.preview"].new(
                     {"extraction_mode": template.extraction_mode}
                 )
-                template.sample_data = "".join(
-                    wizard._parse_pdf(template.sample_file)
-                )
+                template.sample_data = "".join(wizard._parse_pdf(template.sample_file))
             except Exception as err:  # pylint: disable=W8138
                 # A bad upload must never block saving the template - it
                 # just means `sample_data` doesn't get filled in.

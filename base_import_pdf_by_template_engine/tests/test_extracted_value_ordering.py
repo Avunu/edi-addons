@@ -14,6 +14,7 @@ the extracted cost and storing 0.0 (that vendor price used to be 0.0 too,
 before a supplier price-lookup module started populating it). Reordering the
 template's own lines cannot fix this in general; the wizard must.
 """
+
 from unittest import SkipTest
 
 from odoo.tests import TransactionCase, tagged
@@ -72,7 +73,9 @@ class TestExtractedValueOrdering(TransactionCase):
                         "purchase.field_purchase_order_line__product_id"
                     ).id,
                     "pattern": r"^ACME ([\w-]+)$",
-                    "search_field_id": ref("product.field_product_product__default_code").id,
+                    "search_field_id": ref(
+                        "product.field_product_product__default_code"
+                    ).id,
                 },
             ),
             # Deliberately in the order that used to lose: price_unit is
@@ -136,9 +139,9 @@ class TestExtractedValueOrdering(TransactionCase):
             "price_unit": 99.99,
             "product_qty": 2.0,
         }
-        ordered = self.env["wizard.base.import.pdf.upload.line"]._sorted_extracted_items(
-            "purchase.order.line", values
-        )
+        ordered = self.env[
+            "wizard.base.import.pdf.upload.line"
+        ]._sorted_extracted_items("purchase.order.line", values)
         names = [name for name, _ in ordered]
         self.assertEqual(names, ["product_id", "product_qty", "price_unit"])
         self.assertEqual(dict(ordered), values)

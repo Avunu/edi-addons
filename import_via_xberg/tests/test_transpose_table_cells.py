@@ -86,7 +86,9 @@ class TestTransposeTableCells(BaseCase):
         # raw `cells` - untouched by this function - is still the only
         # sane way to read it, which is exactly why callers add these
         # views alongside `cells` rather than replacing it).
-        self.assertEqual(_transpose_table_cells([["Order #:", "Y000000001:01"]]), ([], []))
+        self.assertEqual(
+            _transpose_table_cells([["Order #:", "Y000000001:01"]]), ([], [])
+        )
 
     def test_add_table_cell_views_augments_without_removing_cells(self):
         document = {
@@ -112,8 +114,12 @@ class TestTransposeTableCells(BaseCase):
         self.assertEqual(
             result["tables"][0]["cells"], [["Item", "Qty"], ["Widget", "2"]]
         )
-        self.assertEqual(result["tables"][0]["cellsByHeader"], [{"Item": "Widget", "Qty": "2"}])
-        self.assertEqual(result["tables"][0]["cellsByIndex"], [{"0": "Widget", "1": "2"}])
+        self.assertEqual(
+            result["tables"][0]["cellsByHeader"], [{"Item": "Widget", "Qty": "2"}]
+        )
+        self.assertEqual(
+            result["tables"][0]["cellsByIndex"], [{"0": "Widget", "1": "2"}]
+        )
 
         self.assertEqual(result["tables"][1]["cells"], [["Order #:", "Y1"]])
         self.assertEqual(result["tables"][1]["cellsByHeader"], [])
@@ -122,7 +128,10 @@ class TestTransposeTableCells(BaseCase):
         self.assertEqual(
             result["tables"][2]["cells"], [["Order #:", "Y1"], ["Dealer:", "H510"]]
         )
-        self.assertEqual(result["tables"][2]["cellsByHeader"], [{"Order #:": "Dealer:", "Y1": "H510"}])
+        self.assertEqual(
+            result["tables"][2]["cellsByHeader"],
+            [{"Order #:": "Dealer:", "Y1": "H510"}],
+        )
 
     def test_add_table_cell_views_handles_no_tables(self):
         self.assertEqual(_add_table_cell_views({}), {})

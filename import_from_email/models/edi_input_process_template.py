@@ -12,9 +12,10 @@ class EdiInputProcessTemplate(models.AbstractModel):
     """Generic EDI input processor: extract + create via an import template.
 
     This is deliberately model-agnostic - it doesn't know about purchase
-    orders, a particular supplier, or any other specific document. Any `edi.exchange.type`
-    that sets this as its Processor and points `import_template_id` at a
-    `base.import.pdf.template` gets a working input flow: whatever model
+    orders, a particular supplier, or any other specific document. Any
+    `edi.exchange.type` that sets this as its Processor and points
+    `import_template_id` at a `base.import.pdf.template` gets a working
+    input flow: whatever model
     and fields that template targets is what gets created, driven by the
     same `Form()`-based engine `base_import_pdf_by_template` already uses
     for a manually uploaded file. Add another exchange type + template pair

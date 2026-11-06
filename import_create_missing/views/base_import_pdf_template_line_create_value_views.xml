@@ -11,7 +11,10 @@
          its own "Value"-labeled header regardless of which row is
          selected. A form's `invisible` genuinely removes the field
          (and its label) from a given row's dialog instead. -->
-    <record id="base_import_pdf_template_line_create_value_view_tree" model="ir.ui.view">
+    <record
+        id="base_import_pdf_template_line_create_value_view_tree"
+        model="ir.ui.view"
+    >
         <field name="name">base.import.pdf.template.line.create.value.list</field>
         <field name="model">base.import.pdf.template.line.create.value</field>
         <field name="arch" type="xml">
@@ -29,7 +32,10 @@
         </field>
     </record>
 
-    <record id="base_import_pdf_template_line_create_value_view_form" model="ir.ui.view">
+    <record
+        id="base_import_pdf_template_line_create_value_view_form"
+        model="ir.ui.view"
+    >
         <field name="name">base.import.pdf.template.line.create.value.form</field>
         <field name="model">base.import.pdf.template.line.create.value</field>
         <field name="arch" type="xml">
@@ -51,10 +57,7 @@
                         <field name="has_missing_required" invisible="1" />
                         <field name="has_odoo_default" invisible="1" />
                         <field name="fixed_value_kind" invisible="1" />
-                        <field
-                            name="field_id"
-                            options="{'no_create': True}"
-                        />
+                        <field name="field_id" options="{'no_create': True}" />
                         <field name="field_ttype" invisible="1" />
                         <field name="field_relation" invisible="1" />
                         <field name="is_required" invisible="not field_id" />

@@ -1,12 +1,12 @@
 // Copyright 2026 Avunu LLC (avu.nu)
 // License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 
-import { _t } from "@web/core/l10n/translation";
-import { patch } from "@web/core/utils/patch";
-import { registry } from "@web/core/registry";
-import { formView } from "@web/views/form/form_view";
-import { FormController } from "@web/views/form/form_controller";
-import { X2ManyFieldDialog } from "@web/views/fields/relational_utils";
+import {FormController} from "@web/views/form/form_controller";
+import {X2ManyFieldDialog} from "@web/views/fields/relational_utils";
+import {_t} from "@web/core/l10n/translation";
+import {formView} from "@web/views/form/form_view";
+import {patch} from "@web/core/utils/patch";
+import {registry} from "@web/core/registry";
 
 const LINE_MODEL = "base.import.pdf.template.line";
 

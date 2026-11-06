@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <record id="base_import_pdf_template_line_create_value_view_form" model="ir.ui.view">
+    <record
+        id="base_import_pdf_template_line_create_value_view_form"
+        model="ir.ui.view"
+    >
         <field
             name="name"
         >base.import.pdf.template.line.create.value.form.create_missing_xberg</field>

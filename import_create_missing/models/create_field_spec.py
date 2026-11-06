@@ -8,6 +8,7 @@ Odoo itself put there by default" without knowing anything about
 `base.import.pdf.template.line.create.value` rows. The model layer turns
 the answers into rows; these functions never touch one.
 """
+
 from __future__ import annotations
 
 from collections.abc import Collection, Iterator, Mapping
@@ -142,6 +143,9 @@ def fields_with_defaults(model: BaseModel, names: Collection[str]) -> frozenset[
     wanted = [name for name in names if name in model._fields]
     if not wanted:
         return frozenset()
+    # A dict, not kwargs: with_context(**ctx) merges over the current context,
+    # which would keep the default_* keys clean_context() just removed.
+    # pylint: disable-next=context-overridden
     defaults = model.with_context(clean_context(model.env.context)).default_get(wanted)
     return frozenset(
         name
@@ -221,7 +225,10 @@ def required_field_specs(
     # ir.default, `default=` and the delegated parents' own defaults. The
     # context is cleaned because this runs from a view whose context is
     # full of `default_line_id`-style keys meant for OUR records, which
-    # would otherwise be mistaken for defaults of the target model.
+    # would otherwise be mistaken for defaults of the target model. It is
+    # a dict, not kwargs: with_context(**ctx) merges over the current
+    # context, which would keep the keys clean_context() just removed.
+    # pylint: disable-next=context-overridden
     defaults = model.with_context(clean_context(env.context)).default_get(
         list(fields_by_name)
     )

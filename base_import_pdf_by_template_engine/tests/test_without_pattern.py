@@ -9,6 +9,7 @@
 # full load the field and its default exist and create works normally - the
 # same convention a downstream supplier-lookup module's own tests use.
 from odoo.tests import tagged
+
 from odoo.addons.base.tests.common import BaseCommon
 
 
@@ -34,7 +35,10 @@ class TestWithoutPattern(BaseCommon):
         super().setUpClass()
         cls.model_field = cls.env.ref("base.field_res_partner__name")
         template = cls.env["base.import.pdf.template"].create(
-            {"name": "Engine Test Template", "model_id": cls.env.ref("base.model_res_partner").id}
+            {
+                "name": "Engine Test Template",
+                "model_id": cls.env.ref("base.model_res_partner").id,
+            }
         )
         cls.line = cls.env["base.import.pdf.template.line"].create(
             {

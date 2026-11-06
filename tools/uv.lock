@@ -1559,24 +1559,24 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "81.0.0"
+version = "84.1.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e424d015ab450f51c0af856ae46ea2da83eba51cc88de1/setuptools-81.0.0.tar.gz", hash = "sha256:487b53915f52501f0a79ccfd0c02c165ffe06631443a886740b91af4b7a5845a", size = 1198299, upload-time = "2026-02-06T21:10:39.601Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/eb/7e5f628ee2eb168fecbf8026de7856b2543d6d609cc85f086b9a91ac93d6/setuptools-84.1.0.tar.gz", hash = "sha256:23657205b63d4d31395ab917815247f694aafad28cd21316bf5fd45a51048ea0", size = 1171783, upload-time = "2026-10-19T20:11:43.489Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
+    { url = "https://files.pythonhosted.org/packages/18/02/b4bbb90f8f29e334898ff45c6d9b1fffaa6f378017052b3023a06262b5f7/setuptools-84.1.0-py3-none-any.whl", hash = "sha256:5231689c6ac8156cd155cfb98c3fd6fb252c3e7e9bd3d78b64d3c55f132624c9", size = 819380, upload-time = "2026-10-19T20:11:41.684Z" },
 ]
 
 [[package]]
 name = "setuptools-odoo"
-version = "3.3.2"
+version = "3.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "setuptools" },
     { name = "setuptools-scm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/93/86efd712a2ebcfc1780fa06e20642801c21fbcb50f0abfc0c832870043d3/setuptools_odoo-3.3.2.tar.gz", hash = "sha256:bbcc3b0a3c7be48e18f1734cde4c36d14dda1766e7c5fd679bd2f715a6c269e7", size = 63283, upload-time = "2026-02-09T08:27:35.686Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/b5/657219478954c255415bad176c1137c5ebec37c84b6940cf8f3cf439d7b4/setuptools_odoo-3.3.1.tar.gz", hash = "sha256:cfc7c264c5c7e91489889267aef7cc4d16d85419ac025d93166c2b7daadd7716", size = 63103, upload-time = "2025-08-19T10:02:59.852Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/69/f0369865dbbacad374e36dab994437c2ae8055925d0b9f2f05e7f74fb652/setuptools_odoo-3.3.2-py2.py3-none-any.whl", hash = "sha256:4976c8db0629d6c7994e045cdf131536e9efddbca66cc7a86b790af486101f2c", size = 59787, upload-time = "2026-02-09T08:27:34.382Z" },
+    { url = "https://files.pythonhosted.org/packages/05/06/d1ea88ca3dce63f40885a0324dca7bc8406d429ef71f79a31c794edafd0f/setuptools_odoo-3.3.1-py2.py3-none-any.whl", hash = "sha256:3ac1679ba393721fd409fca8caf8e817f0cd13c3856c49a92cf727dd10069d55", size = 59735, upload-time = "2025-08-19T10:02:58.249Z" },
 ]
 
 [[package]]

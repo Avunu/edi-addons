@@ -606,11 +606,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1793967977,
-        "narHash": "sha256-JpImtMcVpc+50V6S3a4Nedt/FMcwUdwIU+yW+EhWjKs=",
+        "lastModified": 1793991999,
+        "narHash": "sha256-ls/6A4ouGSbnWaH3afM8Ch4g9OgNsdRl9YzTFMR/GzI=",
         "owner": "Avunu",
         "repo": "odoo-nix",
-        "rev": "b063f6e18b86619b545a01c24cf970484fb25878",
+        "rev": "bdcab5721a1466337207deb88019c5e2c5cace14",
         "type": "github"
       },
       "original": {

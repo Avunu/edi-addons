@@ -3,8 +3,17 @@ __pycache__/
 *.egg-info/
 node_modules/
 .ruff_cache/
+
+# odoo-nix addons mode: links the dev shell makes (OCB and the external
+# sources under .odoo-nix/, the rest at the root). No trailing slash on the
+# links: git records a symlink as a file.
 /.odoo-nix/
-/.direnv/
+/odoo.conf
+/odools.toml
+/.venv
+
+# devenv state: the PostgreSQL cluster and Odoo's filestore
 /.devenv/
+/.direnv/
 /result
 /result-*

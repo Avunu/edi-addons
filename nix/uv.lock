@@ -1830,7 +1830,7 @@ wheels = [
 
 [[package]]
 name = "odoo-addon-base-import-pdf-by-template-engine"
-version = "18.0.1.1.0.6"
+version = "18.0.1.1.0.7"
 source = { editable = "../base_import_pdf_by_template_engine" }
 dependencies = [
     { name = "odoo" },
@@ -1859,7 +1859,7 @@ wheels = [
 
 [[package]]
 name = "odoo-addon-edi-import-router"
-version = "18.0.1.0.0.6"
+version = "18.0.1.0.0.7"
 source = { editable = "../edi_import_router" }
 dependencies = [
     { name = "odoo" },
@@ -1880,7 +1880,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-edi-purchase-order-import"
-version = "18.0.1.0.0.3"
+version = "18.0.1.0.0.4"
 source = { editable = "../edi_purchase_order_import" }
 dependencies = [
     { name = "odoo" },
@@ -1895,7 +1895,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-create-missing"
-version = "18.0.1.3.0.5"
+version = "18.0.1.3.0.6"
 source = { editable = "../import_create_missing" }
 dependencies = [
     { name = "odoo" },
@@ -1910,7 +1910,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-create-missing-xberg"
-version = "18.0.1.1.0.3"
+version = "18.0.1.1.0.4"
 source = { editable = "../import_create_missing_xberg" }
 dependencies = [
     { name = "odoo" },
@@ -1927,7 +1927,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-from-email"
-version = "18.0.1.0.0.6"
+version = "18.0.1.0.0.7"
 source = { editable = "../import_from_email" }
 dependencies = [
     { name = "odoo" },
@@ -1946,7 +1946,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-preview"
-version = "18.0.1.0.0.4"
+version = "18.0.1.0.0.5"
 source = { editable = "../import_preview" }
 dependencies = [
     { name = "odoo" },
@@ -1961,7 +1961,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-via-xberg"
-version = "18.0.1.0.0.7"
+version = "18.0.1.0.0.8"
 source = { editable = "../import_via_xberg" }
 dependencies = [
     { name = "jsonpath-ng" },

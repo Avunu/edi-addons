@@ -24,6 +24,8 @@ exclude: |
   /tests/samples/.*|
   # You don't usually want a bot to modify your legal texts
   (LICENSE.*|COPYING.*)|
+  # release-please writes these in its own style
+  (^|/)CHANGELOG\.md$|^\.release-please-manifest\.json$|
   # odoo-nix:local-begin exclude
   # odoo-nix:local-end exclude
   # odoo-nix: locks

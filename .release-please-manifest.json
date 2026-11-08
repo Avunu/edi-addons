@@ -1,0 +1,10 @@
+{
+  "base_import_pdf_by_template_engine": "1.1.0",
+  "edi_import_router": "1.0.0",
+  "edi_purchase_order_import": "1.0.0",
+  "import_create_missing": "1.3.0",
+  "import_create_missing_xberg": "1.1.0",
+  "import_from_email": "1.0.0",
+  "import_preview": "1.0.0",
+  "import_via_xberg": "1.0.0"
+}

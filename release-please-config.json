@@ -1,0 +1,149 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-component-in-tag": true,
+  "include-v-in-tag": false,
+  "tag-separator": ".",
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "chore(release): release ${branch}",
+  "pull-request-header": "Merging this releases the addons below on 18.0: release-please tags each `<addon>-18.0.x.y.z` and publishes its GitHub release, which carries the addon's zip and wheel.",
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "Performance Improvements"
+    },
+    {
+      "type": "revert",
+      "section": "Reverts"
+    },
+    {
+      "type": "deps",
+      "section": "Dependencies"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation",
+      "hidden": true
+    },
+    {
+      "type": "style",
+      "section": "Styles",
+      "hidden": true
+    },
+    {
+      "type": "chore",
+      "section": "Miscellaneous Chores",
+      "hidden": true
+    },
+    {
+      "type": "refactor",
+      "section": "Code Refactoring",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "section": "Build System",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "Continuous Integration",
+      "hidden": true
+    }
+  ],
+  "packages": {
+    "base_import_pdf_by_template_engine": {
+      "component": "base_import_pdf_by_template_engine-18.0",
+      "exclude-paths": [
+        "base_import_pdf_by_template_engine/tests",
+        "base_import_pdf_by_template_engine/readme",
+        "base_import_pdf_by_template_engine/i18n",
+        "base_import_pdf_by_template_engine/i18n_extra",
+        "base_import_pdf_by_template_engine/static/description"
+      ]
+    },
+    "edi_import_router": {
+      "component": "edi_import_router-18.0",
+      "exclude-paths": [
+        "edi_import_router/tests",
+        "edi_import_router/readme",
+        "edi_import_router/i18n",
+        "edi_import_router/i18n_extra",
+        "edi_import_router/static/description"
+      ]
+    },
+    "edi_purchase_order_import": {
+      "component": "edi_purchase_order_import-18.0",
+      "exclude-paths": [
+        "edi_purchase_order_import/tests",
+        "edi_purchase_order_import/readme",
+        "edi_purchase_order_import/i18n",
+        "edi_purchase_order_import/i18n_extra",
+        "edi_purchase_order_import/static/description"
+      ]
+    },
+    "import_create_missing": {
+      "component": "import_create_missing-18.0",
+      "exclude-paths": [
+        "import_create_missing/tests",
+        "import_create_missing/readme",
+        "import_create_missing/i18n",
+        "import_create_missing/i18n_extra",
+        "import_create_missing/static/description"
+      ]
+    },
+    "import_create_missing_xberg": {
+      "component": "import_create_missing_xberg-18.0",
+      "exclude-paths": [
+        "import_create_missing_xberg/tests",
+        "import_create_missing_xberg/readme",
+        "import_create_missing_xberg/i18n",
+        "import_create_missing_xberg/i18n_extra",
+        "import_create_missing_xberg/static/description"
+      ]
+    },
+    "import_from_email": {
+      "component": "import_from_email-18.0",
+      "exclude-paths": [
+        "import_from_email/tests",
+        "import_from_email/readme",
+        "import_from_email/i18n",
+        "import_from_email/i18n_extra",
+        "import_from_email/static/description"
+      ]
+    },
+    "import_preview": {
+      "component": "import_preview-18.0",
+      "exclude-paths": [
+        "import_preview/tests",
+        "import_preview/readme",
+        "import_preview/i18n",
+        "import_preview/i18n_extra",
+        "import_preview/static/description"
+      ]
+    },
+    "import_via_xberg": {
+      "component": "import_via_xberg-18.0",
+      "exclude-paths": [
+        "import_via_xberg/tests",
+        "import_via_xberg/readme",
+        "import_via_xberg/i18n",
+        "import_via_xberg/i18n_extra",
+        "import_via_xberg/static/description"
+      ]
+    }
+  }
+}

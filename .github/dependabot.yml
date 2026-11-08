@@ -7,7 +7,7 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    target-branch: "develop"
+    target-branch: "18.0"
     schedule:
       interval: weekly
     cooldown:
@@ -24,7 +24,7 @@ updates:
         patterns: ["*"]
   - package-ecosystem: nix
     directory: /
-    target-branch: "develop"
+    target-branch: "18.0"
     schedule:
       interval: weekly
     # An addon repository's OCB follows the branch tip: a cooldown picks an odoo/odoo commit

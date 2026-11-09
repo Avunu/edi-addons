@@ -5,7 +5,7 @@
 name: ci
 on:
   push:
-    branches: ["develop"]
+    branches: ["18.0"]
   pull_request:
   workflow_dispatch:
 permissions: {}
@@ -17,17 +17,17 @@ jobs:
     name: ci
     permissions:
       contents: read
-    uses: Avunu/odoo-nix/.github/workflows/odoo-lint.yml@bdcab5721a1466337207deb88019c5e2c5cace14 # v2.3.3
+    uses: Avunu/odoo-nix/.github/workflows/odoo-lint.yml@917f576254afd3108f705a9097940fa51667f304 # v2.4.1
     with:
-      integration-branch: "develop"
+      integration-branch: "18.0"
       runs-on: '["self-hosted","nixos"]'
   test:
     name: ci
     permissions:
       contents: read
-    uses: Avunu/odoo-nix/.github/workflows/odoo-test.yml@bdcab5721a1466337207deb88019c5e2c5cace14 # v2.3.3
+    uses: Avunu/odoo-nix/.github/workflows/odoo-test.yml@917f576254afd3108f705a9097940fa51667f304 # v2.4.1
     with:
-      integration-branch: "develop"
+      integration-branch: "18.0"
       runs-on: '["self-hosted","nixos"]'
       test-timeout-minutes: 60
       client-id: ${{ vars.AVUNU_CI_APP_ID }}

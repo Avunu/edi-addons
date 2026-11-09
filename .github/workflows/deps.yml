@@ -7,7 +7,7 @@ on:
   pull_request:
   # Bring the bot pull requests that are behind up to date.
   push:
-    branches: ["develop"]
+    branches: ["18.0"]
   workflow_dispatch:
 permissions: {}
 jobs:
@@ -17,10 +17,10 @@ jobs:
       pull-requests: write
       actions: write
       checks: read
-    uses: Avunu/odoo-nix/.github/workflows/odoo-deps.yml@bdcab5721a1466337207deb88019c5e2c5cace14 # v2.3.3
+    uses: Avunu/odoo-nix/.github/workflows/odoo-deps.yml@917f576254afd3108f705a9097940fa51667f304 # v2.4.1
     with:
       shape: addons
-      integration-branch: "develop"
+      integration-branch: "18.0"
       runs-on: '["self-hosted","nixos"]'
       auto-merge: true
       auto-merge-policy: all

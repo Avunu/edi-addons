@@ -454,11 +454,11 @@
     "oca-edi-framework": {
       "flake": false,
       "locked": {
-        "lastModified": 1792585763,
-        "narHash": "sha256-gPWsaPNZXiN2BN+/iYHVBjuTiCJwq24VoWeU6a1suUs=",
+        "lastModified": 1793272926,
+        "narHash": "sha256-WEthyrcudlZ8WADmfIFmwVfW//NcMe839IdCGu/OiF4=",
         "owner": "OCA",
         "repo": "edi-framework",
-        "rev": "b14c4b3b8c79f157b502ee5c04c28cc5c37d8a2b",
+        "rev": "5b7b4bb2399bdc9bdf0eb40135c17512e949c390",
         "type": "github"
       },
       "original": {

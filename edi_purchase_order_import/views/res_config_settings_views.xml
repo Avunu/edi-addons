@@ -20,6 +20,12 @@
                 >
                     <field name="edi_po_notify_group_id" />
                 </setting>
+                <setting
+                    id="edi_po_reply_allowed"
+                    help="Shop mailboxes (addresses or @domains) that notices about imported purchase orders may be emailed to, as replies to the vendor's email forwarded to Odoo"
+                >
+                    <field name="edi_po_reply_allowed" />
+                </setting>
             </setting>
         </field>
     </record>

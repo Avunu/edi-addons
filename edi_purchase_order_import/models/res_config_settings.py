@@ -14,3 +14,15 @@ class ResConfigSettings(models.TransientModel):
         "inbound EDI/email order confirmation creates and confirms a "
         "purchase order. Defaults to Purchase: Administrator.",
     )
+
+    edi_po_reply_allowed = fields.Char(
+        string="Allowed Reply Addresses",
+        config_parameter="edi_purchase_order_import.reply_allowed",
+        help="Email addresses (orders@shop.example) and domains (@shop.example) "
+        "that notices about imported purchase orders may be emailed to, "
+        "separated by commas or spaces, besides the emails of internal users "
+        "and companies. Notices are emailed to the shop mailbox that "
+        "forwarded the vendor's email to Odoo, but only if it is listed here "
+        "(or is a user's email): the addresses come from the headers of the "
+        "inbound email.",
+    )

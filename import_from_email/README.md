@@ -86,58 +86,59 @@ and plain `create()` on `edi.exchange.record` does not infer this transition on 
 
 The email's own `Message-Id` and `Subject` are also stored on the exchange record
 (`inbound_message_id`, `inbound_subject`). This is deliberate: with `quick_exec` the
-record is processed *inside* `create_record()`, i.e. before Odoo's mail gateway has posted
-the inbound `mail.message` on the exchange record, so a processor that wants to answer the
-email in the same conversation thread (see `edi_purchase_order_import`) cannot look it up
-on the chatter at that point.
+record is processed _inside_ `create_record()`, i.e. before Odoo's mail gateway has
+posted the inbound `mail.message` on the exchange record, so a processor that wants to
+answer the email in the same conversation thread (see `edi_purchase_order_import`)
+cannot look it up on the chatter at that point.
 
 ### Where a reply goes (`inbound_reply_to`)
 
 In the typical set-up a vendor emails a shop mailbox (Gmail, say) and a forwarding rule
 passes the email on to the Odoo mail alias. A reply to it must go back to that **shop
-mailbox**, never to the vendor who wrote the email. `message_new()` therefore computes the
-addresses to reply to and stores them, comma separated and normalized, in
+mailbox**, never to the vendor who wrote the email. `message_new()` therefore computes
+the addresses to reply to and stores them, comma separated and normalized, in
 `inbound_reply_to` (empty when nothing could be determined):
 
 1. The mailbox that **forwarded** the email is named by `X-Forwarded-For` (Gmail's
-   forwarding rules add it): when it names someone, that is the answer. Otherwise use the
-   addresses the email was originally addressed to — its `To` header — leaving out
-   colleagues of the sender (the same domain, unless that is a public mailbox provider such
-   as gmail.com). `Cc` is ignored.
-2. Remove: addresses of this Odoo instance (the bounce, catchall and default-from address
-   of every `mail.alias.domain`, every `mail.alias` — including the exchange alias itself —
-   and the legacy `mail.catchall.*` system parameters); the Odoo-side delivery targets —
-   only the **top-most** `Delivered-To` (added by the Odoo side's mail server; the ones
-   below were added by the shop's own server as the email passed through the shop mailbox,
-   and name that very mailbox, so they stay) and `X-Forwarded-To` (where the forwarding
-   rule sends the email); the original sender (the vendor, `From`); and no-reply style
-   addresses (`noreply`, `no-reply`, `donotreply`, `mailer-daemon`, `postmaster`,
-   `bounce`, ...). `X-Original-To` is not used.
-3. When nothing is left — the email was forwarded **by hand** to the alias, so its `To` was
-   only the alias — fall back to the forwarder, i.e. the `From` address, unless that is an
-   instance or no-reply address too.
-4. Keep at most 5 addresses (`MAX_REPLY_ADDRESSES`): whoever can write to the alias chooses
-   these headers. `edi_purchase_order_import` additionally only emails addresses it knows to
-   be shop-side (see its README).
+   forwarding rules add it): when it names someone, that is the answer. Otherwise use
+   the addresses the email was originally addressed to — its `To` header — leaving out
+   colleagues of the sender (the same domain, unless that is a public mailbox provider
+   such as gmail.com). `Cc` is ignored.
+2. Remove: addresses of this Odoo instance (the bounce, catchall and default-from
+   address of every `mail.alias.domain`, every `mail.alias` — including the exchange
+   alias itself — and the legacy `mail.catchall.*` system parameters); the Odoo-side
+   delivery targets — only the **top-most** `Delivered-To` (added by the Odoo side's
+   mail server; the ones below were added by the shop's own server as the email passed
+   through the shop mailbox, and name that very mailbox, so they stay) and
+   `X-Forwarded-To` (where the forwarding rule sends the email); the original sender
+   (the vendor, `From`); and no-reply style addresses (`noreply`, `no-reply`,
+   `donotreply`, `mailer-daemon`, `postmaster`, `bounce`, ...). `X-Original-To` is not
+   used.
+3. When nothing is left — the email was forwarded **by hand** to the alias, so its `To`
+   was only the alias — fall back to the forwarder, i.e. the `From` address, unless that
+   is an instance or no-reply address too.
+4. Keep at most 5 addresses (`MAX_REPLY_ADDRESSES`): whoever can write to the alias
+   chooses these headers. `edi_purchase_order_import` additionally only emails addresses
+   it knows to be shop-side (see its README).
 
 Odoo's `message_parse()` keeps neither `X-Forwarded-For` nor the separate `To` and
 `Delivered-To` (they are merged in `msg_dict["to"]`), and extra keys cannot be added to
 `msg_dict` (the gateway hands it to `message_post()`, which rejects unknown ones). So
 `models/mail_thread.py` extends `mail.thread._message_route_process()`: when a route
 targets an `edi.exchange.record` it puts the raw routing headers in the context
-(`edi_inbound_headers`), where `message_new()` finds them — also when the gateway reaches
-the record through `message_update()` (an email whose References collide with an earlier
-exchange; it then gives no `update_vals`, so the new exchange is filed under the backend and
-type of the earlier one). When `message_new()` is called without the headers, the
-flattened `msg_dict["to"]` is all there is.
+(`edi_inbound_headers`), where `message_new()` finds them — also when the gateway
+reaches the record through `message_update()` (an email whose References collide with an
+earlier exchange; it then gives no `update_vals`, so the new exchange is filed under the
+backend and type of the earlier one). When `message_new()` is called without the
+headers, the flattened `msg_dict["to"]` is all there is.
 
-A vendor that writes to the alias directly (no forwarding) ends up in the fallback, as the
-sender. Consumers that know the vendor must filter it out themselves; `edi_purchase_order_import`
-does.
+A vendor that writes to the alias directly (no forwarding) ends up in the fallback, as
+the sender. Consumers that know the vendor must filter it out themselves;
+`edi_purchase_order_import` does.
 
-The addresses are only *stored* here; sending is up to the processor. Instance addresses
-are read as sudo, because whoever feeds the gateway (alias owner, cron) may not be allowed
-to read aliases; only email addresses come out of it.
+The addresses are only _stored_ here; sending is up to the processor. Instance addresses
+are read as sudo, because whoever feeds the gateway (alias owner, cron) may not be
+allowed to read aliases; only email addresses come out of it.
 
 ## Processing an exchange record generically
 
@@ -203,7 +204,8 @@ python odoo/odoo-bin -c odoo.conf -d <testdb> -i import_from_email \
   --test-enable --test-tags /import_from_email --stop-after-init
 ```
 
-`tests/test_reply_addresses.py` (post-install) covers the reply-address rules above: a raw
-Gmail-forwarded email and a manual forward through a real `mail.alias`, instance/no-reply/sender
-exclusion, `X-Forwarded-For`, the second `Delivered-To`, colleagues of the sender, the cap, an
-email colliding with an earlier exchange, and the fallbacks.
+`tests/test_reply_addresses.py` (post-install) covers the reply-address rules above: a
+raw Gmail-forwarded email and a manual forward through a real `mail.alias`,
+instance/no-reply/sender exclusion, `X-Forwarded-For`, the second `Delivered-To`,
+colleagues of the sender, the cap, an email colliding with an earlier exchange, and the
+fallbacks.

@@ -76,7 +76,6 @@ class EdiExchangeRecord(models.Model):
         help="Message-Id header of the email this exchange was created from.",
     )
     inbound_subject = fields.Char(
-        string="Inbound Subject",
         copy=False,
         readonly=True,
         help="Subject of the email this exchange was created from.",

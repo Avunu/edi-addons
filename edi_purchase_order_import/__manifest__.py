@@ -18,6 +18,7 @@
     ],
     "data": [
         "data/ir_config_parameter.xml",
+        "data/mail_message_subtype_data.xml",
         "views/res_config_settings_views.xml",
     ],
 }

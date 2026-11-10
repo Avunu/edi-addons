@@ -45,6 +45,7 @@ class TestEdiMailIntake(BaseCommon):
         msg_dict = {
             "body": "<p>Order #: ORD-00000TESTA</p>",
             "message_id": "<abc123@parts-supplier.example>",
+            "subject": "Order ORD-00000TESTA",
         }
         record = self.env["edi.exchange.record"].message_new(
             msg_dict, self._custom_values()
@@ -57,6 +58,10 @@ class TestEdiMailIntake(BaseCommon):
         # the whole document is already in hand - no separate "receive"
         # round-trip needed, so `quick_exec` must see it as ready to process
         self.assertEqual(record.edi_exchange_state, "input_received")
+        # kept on the record so a processor running inside create_record()
+        # (quick_exec) can still tell which email it came from
+        self.assertEqual(record.inbound_message_id, "<abc123@parts-supplier.example>")
+        self.assertEqual(record.inbound_subject, "Order ORD-00000TESTA")
         self.assertIn("ORD-00000TESTA", b64decode(record.exchange_file).decode())
 
     def test_message_new_without_backend_id_raises(self):

@@ -1880,7 +1880,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-edi-purchase-order-import"
-version = "18.0.1.0.0.4"
+version = "18.0.1.0.0.5"
 source = { editable = "../edi_purchase_order_import" }
 dependencies = [
     { name = "odoo" },
@@ -1927,7 +1927,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-import-from-email"
-version = "18.0.1.0.0.7"
+version = "18.0.1.0.0.8"
 source = { editable = "../import_from_email" }
 dependencies = [
     { name = "odoo" },

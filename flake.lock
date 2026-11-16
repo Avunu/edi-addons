@@ -471,11 +471,11 @@
     "oca-queue": {
       "flake": false,
       "locked": {
-        "lastModified": 1793103182,
-        "narHash": "sha256-LOg6xkhIhQX/2GkebjWwaXkkVCzvcba3PUxu4wQqbRc=",
+        "lastModified": 1794181599,
+        "narHash": "sha256-FZi9xaz54mgSe64lsPkNTkFz+7oHKMq9zLvbMYlqUC0=",
         "owner": "OCA",
         "repo": "queue",
-        "rev": "dff164faed11134e00f718baa6638c2846986b6c",
+        "rev": "396a3cf4eaf6ad679dfff9d38ee60ed371e97007",
         "type": "github"
       },
       "original": {

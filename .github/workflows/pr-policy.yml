@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: Avunu/odoo-nix/.github/workflows/odoo-pr-policy.yml@917f576254afd3108f705a9097940fa51667f304 # v2.4.1
+    uses: Avunu/odoo-nix/.github/workflows/odoo-pr-policy.yml@2de0c9e8078f01dcd2ad98829dd4b440cc9c099e # v3.1.0
     with:
       integration-branch: "18.0"
       runs-on: '["self-hosted","nixos"]'

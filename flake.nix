@@ -26,7 +26,7 @@
       flake = false;
     };
     # >>> odoo-nix: inputs (managed) >>>
-    odoo-nix.url = "github:Avunu/odoo-nix/release-2";
+    odoo-nix.url = "github:Avunu/odoo-nix/release";
     standards-profile = {
       url = "github:Avunu/odoo-standards-profile/v1";
       flake = false;

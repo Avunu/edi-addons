@@ -6,7 +6,7 @@
     "EDI framework: extraction modes for plain text/HTML sources, a "
     "mail.alias entry point onto edi.exchange.record, and a generic "
     "template-driven input processor.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://github.com/Avunu/edi-addons",

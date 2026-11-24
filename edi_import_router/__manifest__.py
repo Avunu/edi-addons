@@ -4,7 +4,7 @@
     "name": "EDI Import Router",
     "summary": "One inbox for emailed and printed documents: TypeSafe picks "
     "the EDI exchange type (and so the import template) for each one.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://github.com/Avunu/edi-addons",

@@ -707,6 +707,20 @@ class TestEdiNotice(TransactionCase):
 
     # -- the emailed copy --------------------------------------------------------
 
+    def test_notices_name_the_order_and_its_vendor(self):
+        order = self.env["purchase.order"].create({"partner_id": self.vendor.id})
+        reference = f"{order.name} – EDI NOTICE TEST VENDOR"
+        self.assertEqual(order._edi_reference(), reference)
+        order._edi_confirm_and_notify()
+        notice = self._notice(order)
+        # in the text, and as the title of the inbox notification
+        self.assertIn(reference, notice.body)
+        self.assertIn("confirmed automatically by Odoo", notice.body)
+        self.assertEqual(notice.record_name, reference)
+        # a caller can still name it otherwise
+        other = order._edi_post_notice("x", outstanding=False, record_name="Other")
+        self.assertEqual(other.record_name, "Other")
+
     def test_emailed_links_to_records_are_absolute(self):
         exchange = self._receive_email(17)
         order = exchange.record

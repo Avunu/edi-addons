@@ -4,8 +4,8 @@
          never get a notice posted with it. Recipients are chosen explicitly by
          purchase.order._edi_post_notice(). -->
     <record id="mt_edi_notice" model="mail.message.subtype">
-        <field name="name">EDI Notice</field>
-        <field name="description">EDI Notice</field>
+        <field name="name">Import Notice</field>
+        <field name="description">Import Notice</field>
         <field name="res_model">purchase.order</field>
         <field name="internal" eval="True" />
         <field name="default" eval="False" />

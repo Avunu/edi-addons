@@ -41,13 +41,28 @@ class PurchaseOrder(models.Model):
         if self.state == "draft":
             self.button_confirm()
         self._edi_post_notice(
-            _(
-                "Purchase order confirmed automatically from an "
-                "incoming EDI/email order confirmation."
+            Markup("<p>{}</p>").format(
+                _(
+                    "Purchase order %s was confirmed automatically by Odoo from "
+                    "the vendor's order confirmation.",
+                    self._get_html_link(title=self._edi_reference()),
+                )
             ),
             email=True,
             outstanding=True,
         )
+
+    def _edi_reference(self):
+        """How notices and their emails refer to this order: its number and
+        its vendor, ``P00204 – NAPA`` (just the number without a vendor).
+        Used as the text of links to the order and as the title of the
+        notices' inbox notifications, which otherwise show the bare number.
+        """
+        self.ensure_one()
+        # sudo: the vendor's name is shown to whoever is notified, who may
+        # not be allowed to read partners
+        vendor = self.sudo().partner_id.commercial_partner_id.name
+        return f"{self.name} – {vendor}" if vendor else self.name
 
     # ------------------------------------------------------------
     # NOTICES
@@ -93,7 +108,9 @@ class PurchaseOrder(models.Model):
         :param bool outstanding: mark the notice as clearable by
           `_edi_clear_notices()`
         :param message_post_kwargs: extra `message_post()` arguments (e.g.
-          ``subject``, ``author_id`` - OdooBot by default - ``attachment_ids``).
+          ``subject``, ``author_id`` - Odoo (``base.partner_root``) by
+          default - ``attachment_ids``, ``record_name`` - the title of the
+          inbox notification, `_edi_reference()` by default).
           ``partner_ids`` are notified in the inbox as well (internal users
           only). Must be JSON-serializable to be deferrable; otherwise the
           notice is posted right away.
@@ -122,12 +139,14 @@ class PurchaseOrder(models.Model):
         partner_ids = set(self._edi_notify_partners().ids)
         partner_ids.update(message_post_kwargs.pop("partner_ids", None) or ())
         post_kwargs = {
-            # OdooBot: nobody wrote this, and the author must not be skipped
-            # as a recipient if the user running the import is in the group
+            # Odoo itself (base.partner_root): nobody wrote this, and the
+            # author must not be skipped as a recipient if the user running
+            # the import is in the group
             "author_id": self.env["ir.model.data"]._xmlid_to_res_id(
                 "base.partner_root"
             ),
             "notify_author": True,
+            "record_name": self._edi_reference(),
             **message_post_kwargs,
             "subtype_xmlid": NOTICE_SUBTYPE,
             "partner_ids": sorted(partner_ids),

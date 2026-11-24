@@ -7,7 +7,7 @@ class MailMessage(models.Model):
     _inherit = "mail.message"
 
     edi_notice_outstanding = fields.Boolean(
-        string="Outstanding EDI Notice",
+        string="Outstanding Import Notice",
         copy=False,
         # the flag decides whose inbox notifications get cleared: not for
         # whoever may write the message (its author, a recipient) to set

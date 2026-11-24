@@ -16,7 +16,7 @@
             <setting id="auto_receipt_reminder" position="after">
                 <setting
                     id="edi_po_notify_group"
-                    help="Group notified in Messages/Inbox when an inbound EDI/email order confirmation creates and confirms a purchase order"
+                    help="Group notified in Messages/Inbox when Odoo creates and confirms a purchase order from a vendor's emailed or printed order confirmation"
                 >
                     <field name="edi_po_notify_group_id" />
                 </setting>

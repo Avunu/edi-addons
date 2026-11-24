@@ -48,7 +48,7 @@ class EdiImportRouterDocument(models.Model):
     """One emailed or printed document on its way to an exchange type."""
 
     _name = "edi.import.router.document"
-    _description = "EDI Import Router Document"
+    _description = "Import Router Document"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "id desc"
 
@@ -79,7 +79,7 @@ class EdiImportRouterDocument(models.Model):
         "edi.import.router.document.choice",
         "document_id",
         string="Choices",
-        help="Every target of the router with TypeSafe's probability for it, "
+        help="Every target of the router with Odoo's probability for it, "
         "so a reviewer can route the document by hand.",
     )
     error_message = fields.Text()
@@ -364,7 +364,7 @@ class EdiImportRouterDocument(models.Model):
         if unreadable:
             self.message_post(
                 body=_(
-                    "Not offered to TypeSafe: %s.",
+                    "Not considered by Odoo: %s.",
                     "; ".join(
                         f"{t.exchange_type_id.name} ({self._router_skip_reason(t)})"
                         for t in unreadable
@@ -396,7 +396,7 @@ class EdiImportRouterDocument(models.Model):
             return self._router_set_review(str(err))
         answer = response.choices.get("exchange_type")
         if not answer:
-            return self._router_set_review(_("TypeSafe returned no answer."))
+            return self._router_set_review(_("Odoo could not classify this document."))
         self.write(
             {
                 "confidence": answer.confidence,
@@ -408,8 +408,8 @@ class EdiImportRouterDocument(models.Model):
             if unreadable:
                 return self._router_set_review(
                     _(
-                        "TypeSafe answered 'none', but it was not asked about "
-                        "%s (see the note above). Choose by hand.",
+                        "Odoo found no matching document type, but it could "
+                        "not consider %s (see the note above). Choose by hand.",
                         ", ".join(unreadable.mapped("exchange_type_id.name")),
                     )
                 )
@@ -420,7 +420,7 @@ class EdiImportRouterDocument(models.Model):
                 )
             return self._router_set_review(
                 _(
-                    "TypeSafe thinks this is not one of the targets, but only "
+                    "Odoo thinks this is not one of the targets, but is only "
                     "%(confidence).0f%% sure (ignoring needs %(threshold).0f%%).",
                     confidence=answer.confidence * 100,
                     threshold=router.ignore_threshold * 100,
@@ -428,12 +428,12 @@ class EdiImportRouterDocument(models.Model):
             )
         if answer.confidence < router.confidence_threshold:
             return self._router_set_review(
-                _("TypeSafe is not confident enough (%.0f%%).", answer.confidence * 100)
+                _("Odoo is not confident enough (%.0f%%).", answer.confidence * 100)
             )
         target = targets.filtered(lambda t: str(t.id) == answer.choice)
         if not target:
             return self._router_set_review(
-                _("TypeSafe chose an unknown target (%s).", answer.choice)
+                _("Odoo chose an unknown target (%s).", answer.choice)
             )
         self._router_dispatch(target)
 

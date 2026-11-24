@@ -10,9 +10,9 @@ class ResConfigSettings(models.TransientModel):
         "res.groups",
         string="Notify Group on Imported Purchase Orders",
         config_parameter="edi_purchase_order_import.notify_group_id",
-        help="Group whose users are notified (Messages/Inbox) when an "
-        "inbound EDI/email order confirmation creates and confirms a "
-        "purchase order. Defaults to Purchase: Administrator.",
+        help="Group whose users are notified (Messages/Inbox) when Odoo "
+        "creates and confirms a purchase order from a vendor's emailed or "
+        "printed order confirmation. Defaults to Purchase: Administrator.",
     )
 
     edi_po_reply_allowed = fields.Char(

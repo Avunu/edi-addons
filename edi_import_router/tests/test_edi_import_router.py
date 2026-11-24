@@ -304,7 +304,7 @@ class TestEdiImportRouter(BaseCommon):
         ].criteria
         self.assertNotIn(str(self.pdf_target.id), criteria)
         note = " ".join(doc.message_ids.mapped("body"))
-        self.assertIn("Not offered to TypeSafe", note)
+        self.assertIn("Not considered by Odoo", note)
         choices = {c.name: c for c in doc.choice_ids}
         self.assertFalse(choices["router_pdf"].readable)
         self.assertIn("needs a PDF", choices["router_pdf"].note)

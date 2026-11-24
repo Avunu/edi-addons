@@ -8,7 +8,7 @@ class EdiImportRouterDocumentChoice(models.Model):
     it, with a button that routes the document there by hand."""
 
     _name = "edi.import.router.document.choice"
-    _description = "EDI Import Router Document Choice"
+    _description = "Import Router Document Choice"
     _order = "probability desc, id"
 
     document_id = fields.Many2one(
@@ -16,13 +16,13 @@ class EdiImportRouterDocumentChoice(models.Model):
     )
     document_state = fields.Selection(related="document_id.state")
     target_id = fields.Many2one("edi.import.router.target", ondelete="cascade")
-    is_none = fields.Boolean(help="TypeSafe's 'none of these' answer.")
+    is_none = fields.Boolean(help="Odoo's 'none of these' answer.")
     name = fields.Char(compute="_compute_name")
     probability = fields.Float()
     readable = fields.Boolean(
         help="Whether the target's template can read this document at all.",
     )
-    note = fields.Char(help="Why this target was not offered to TypeSafe.")
+    note = fields.Char(help="Why Odoo could not consider this target.")
 
     @api.depends("is_none", "target_id")
     def _compute_name(self):

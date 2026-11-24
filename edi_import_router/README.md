@@ -2,7 +2,8 @@
 
 One inbox for documents that reach Odoo by email or by printer. TypeSafe decides which
 `edi.exchange.type` each one is, and the document is filed under it like any other EDI
-input.
+input. Users never see TypeSafe named: the chatter notes, review reasons and labels say
+what Odoo decided ("Odoo is not confident enough (62%)").
 
 ## Why
 

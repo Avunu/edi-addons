@@ -27,7 +27,7 @@ class EdiImportRouter(models.Model):
     """
 
     _name = "edi.import.router"
-    _description = "EDI Import Router"
+    _description = "Import Router"
     _inherit = ["mail.alias.mixin"]
 
     name = fields.Char(required=True)
@@ -39,14 +39,14 @@ class EdiImportRouter(models.Model):
     document_count = fields.Integer(compute="_compute_document_count")
     confidence_threshold = fields.Float(
         default=0.8,
-        help="A document is filed automatically only when TypeSafe's "
+        help="A document is filed automatically only when Odoo's "
         "confidence in its answer is at least this high; anything less waits "
         "for a person to confirm it.",
     )
     ignore_threshold = fields.Float(
         default=0.98,
         help="A document is ignored (rather than sent to review) only when "
-        "TypeSafe answers 'none' with at least this much confidence. A wrongly "
+        "Odoo answers 'none' with at least this much confidence. A wrongly "
         "ignored order is far worse than an extra review item, so this is "
         "stricter than the filing threshold.",
     )
@@ -57,8 +57,8 @@ class EdiImportRouter(models.Model):
     )
     instructions = fields.Text(
         default=DEFAULT_INSTRUCTIONS,
-        help="The question put to TypeSafe. The targets' descriptions are "
-        "the answers it chooses between.",
+        help="The question Odoo answers for each document. The targets' "
+        "descriptions are the answers it chooses between.",
     )
     printer_setup = fields.Char(compute="_compute_printer_setup")
 

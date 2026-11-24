@@ -10,7 +10,7 @@
             <setting id="invite_users_setting" position="before">
                 <setting
                     id="edi_import_router_typesafe"
-                    help="API key used to route emailed and printed documents to an EDI exchange type"
+                    help="API key Odoo uses to route emailed and printed documents to the right import"
                     groups="base.group_system"
                 >
                     <field name="edi_import_router_typesafe_api_key" password="True" />

@@ -41,7 +41,10 @@ inbound order confirmation already represents a done deal with the vendor.
    is subscribed to that subtype (it is not a default one and is hidden from the
    follower options), and it is internal, so neither the vendor, a portal follower nor
    any other follower is notified by it, and the vendor cannot read it in the portal.
-   The author is OdooBot unless `author_id` is given.
+   The author is Odoo (`base.partner_root`) unless `author_id` is given, and the inbox
+   notification is titled with the order's reference, `purchase.order._edi_reference()`
+   (`P00204 – NAPA`: number and vendor), unless `record_name` is given. The confirmation
+   notice names the order the same way.
 2. **An inbox notification (`needaction`) for the notify group** (Settings > Purchase,
    default Purchase: Administrator). **Never an email**: the notice is posted with the
    `edi_notice_mode="inbox"` notification parameter and

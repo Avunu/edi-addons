@@ -4,7 +4,7 @@
     "name": "EDI Purchase Order Import",
     "summary": "Auto-confirm purchase orders created from an inbound EDI/"
     "email import and notify a configurable group when it happens.",
-    "version": "18.0.1.1.0",
+    "version": "18.0.1.2.0",
     "category": "Inventory/Purchase",
     "author": "Avunu LLC",
     "website": "https://github.com/Avunu/edi-addons",

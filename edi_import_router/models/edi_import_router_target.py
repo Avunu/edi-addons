@@ -29,7 +29,7 @@ def reads_pdf(mode):
 
 class EdiImportRouterTarget(models.Model):
     _name = "edi.import.router.target"
-    _description = "EDI Import Router Target"
+    _description = "Import Router Target"
     _order = "sequence, id"
 
     router_id = fields.Many2one(
@@ -64,7 +64,7 @@ class EdiImportRouterTarget(models.Model):
     description = fields.Text(
         required=True,
         help="What tells this document type apart: the sender, subject or "
-        "title, and distinctive text. This is what TypeSafe reads, so name "
+        "title, and distinctive text. This is what Odoo reads, so name "
         "the difference when two vendors share a sender (e.g. the dealer).",
     )
     reads = fields.Char(

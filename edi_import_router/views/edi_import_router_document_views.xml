@@ -61,7 +61,7 @@
                         <field name="error_message" />
                     </group>
                     <group
-                        string="TypeSafe's answer: route by hand"
+                        string="Odoo's answer: route by hand"
                         invisible="not choice_ids"
                     >
                         <field name="choice_ids" nolabel="1" colspan="2" readonly="1">

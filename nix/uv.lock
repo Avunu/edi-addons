@@ -1859,7 +1859,7 @@ wheels = [
 
 [[package]]
 name = "odoo-addon-edi-import-router"
-version = "18.0.1.0.0.7"
+version = "18.0.1.1.0"
 source = { editable = "../edi_import_router" }
 dependencies = [
     { name = "odoo" },
@@ -1880,7 +1880,7 @@ requires-dist = [
 
 [[package]]
 name = "odoo-addon-edi-purchase-order-import"
-version = "18.0.1.1.0"
+version = "18.0.1.2.0"
 source = { editable = "../edi_purchase_order_import" }
 dependencies = [
     { name = "odoo" },
